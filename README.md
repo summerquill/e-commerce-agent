@@ -54,6 +54,8 @@
 - **Review Hybrid 路由**：确定性信号（缺信息/全部完成/超迭代上限）走规则快路径不调 LLM，仅 `failed → 是否 replan` 走 LLM，平衡准确性与成本。
 - **可插拔持久化层**：基于 LangGraph `BaseCheckpointSaver` 抽象，dev 用 MemorySaver，prod 可零成本切换 PostgresSaver，支持中断后跨进程恢复。
 
+> 详细设计决策、trade-off 与面试讲点见 [docs/plan-execute-design.md](docs/plan-execute-design.md)。
+
 ---
 
 ## 系统架构
