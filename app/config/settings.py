@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # Multi-Agent 配置（第6期）
     multi_agent_enabled: bool = False
 
+    # Plan-and-Execute 配置（LangGraph 升级）
+    plan_execute_enabled: bool = False
+    checkpointer_backend: str = "memory"  # memory | postgres (v2)
+    max_plan_iterations: int = 3  # replan 次数上限,防死循环
+
     # Memory 配置（第7期）
     memory_enabled: bool = True
     memory_dir: str = "app/sessions/memory"

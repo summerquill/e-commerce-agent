@@ -17,7 +17,11 @@ INTENT_LABELS = {
 
 
 def main():
-    if settings.multi_agent_enabled:
+    if settings.plan_execute_enabled:
+        from app.plan_execute.agent import PlanExecuteAgent
+        agent = PlanExecuteAgent()
+        mode = "Plan-and-Execute 规划执行模式"
+    elif settings.multi_agent_enabled:
         from app.multi_agent.orchestrator import MultiAgentOrchestrator
         agent = MultiAgentOrchestrator()
         mode = "Multi-Agent 协作模式"
