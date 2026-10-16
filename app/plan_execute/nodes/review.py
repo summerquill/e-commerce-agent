@@ -25,14 +25,14 @@ def review_node(state: AgentState, deps: NodeDeps) -> dict:
     # 快路径：确定性信号
     if last and last["status"] == "needs_clarify":
         return {"review_decision": "clarify"}
-    if state["current_step_idx"] >= len(state["plan"]):
-        return {"review_decision": "done"}
+    # 迭代上限兜底优先：防止 failed→replan 死循环
     if state.get("plan_iteration", 0) >= settings.max_plan_iterations:
         return {"review_decision": "done"}
-
-    # 慢路径：上一步失败 → LLM 判断 replan or done
+    # 慢路径：失败的最后一步仍可能通过 replan 恢复，故须在"全部完成"判断之前
     if last and last["status"] == "failed":
         return {"review_decision": _judge_failure(state, deps)}
+    if state["current_step_idx"] >= len(state["plan"]):
+        return {"review_decision": "done"}
 
     return {"review_decision": "continue"}
 

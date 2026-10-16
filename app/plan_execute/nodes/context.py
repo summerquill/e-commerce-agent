@@ -7,7 +7,7 @@ functools.partial 注入（替代旧的类绑定方法，拆文件后依赖仍�
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from app.plan_execute.state import Step, StepResult
@@ -23,6 +23,9 @@ class NodeDeps:
     tool_manager: Any         # ToolManager
     skill_manager: Any = None  # SkillManager（注入 planner）
     memory_manager: Any = None  # MemoryManager（注入 planner 的跨轮上下文）
+    # executor 动作解析缓存：confirm interrupt resume 会重放整个节点，
+    # 缓存保证 LLM 解析只发生一次（key 含 thread_id+step 定位，天然按轮/步隔离）
+    resolve_cache: dict = field(default_factory=dict)
 
 
 # ──────────────────── LLM 调用辅助 ────────────────────

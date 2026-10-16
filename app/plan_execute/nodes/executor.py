@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
 from app.plan_execute.nodes.context import (
@@ -29,60 +30,90 @@ from app.plan_execute.state import AgentState, Step, StepResult
 HIGH_RISK_TOOLS: set[str] = set()
 
 
-def executor_node(state: AgentState, deps: NodeDeps) -> dict:
+def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> dict:
     idx = state["current_step_idx"]
     step: Step = state["plan"][idx]
 
-    user_content = _build_user_content(step, state)
+    # 幂等解析：confirm interrupt resume 时节点整体重放，同一执行位点必须复用
+    # 首次解析结果，避免二次 LLM 调用可能解析出不同动作。
+    thread_id = config.get("configurable", {}).get("thread_id", "default")
+    cache_key = (
+        thread_id,
+        state.get("plan_iteration", 0),
+        idx,
+        len(state.get("step_results", [])),
+        state.get("clarified_answer", ""),
+    )
+    action = deps.resolve_cache.get(cache_key)
+    if action is None:
+        action = _resolve_action(deps, step, state)
+        deps.resolve_cache[cache_key] = action
 
+    kind = action[0]
+    if kind == "tool":
+        _, tool, args = action
+        return _run_tool(deps, step, idx, tool, args)
+
+    if kind == "clarify":
+        return {
+            "step_results": [StepResult(
+                step_id=step["id"], tool=None, input={},
+                output=None, status="needs_clarify", error=None,
+            )],
+            "clarify_question": action[1],
+            # idx 不前进：clarify 回答后回 executor 重试同一步
+        }
+
+    if kind == "reply":
+        return {
+            "step_results": [StepResult(
+                step_id=step["id"], tool=None, input={},
+                output=action[1], status="success", error=None,
+            )],
+            "current_step_idx": idx + 1,
+        }
+
+    # kind == "error"
+    return _fail_step(step, idx, action[1])
+
+
+def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
+    """LLM 解析当前步动作。返回元组：
+    ("tool", name, args) | ("clarify", question) | ("reply", text) | ("error", msg)
+    """
     try:
         resp = chat_completion(
             deps,
             messages=[
                 {"role": "system", "content": EXECUTOR_PROMPT},
-                {"role": "user", "content": user_content},
+                {"role": "user", "content": _build_user_content(step, state)},
             ],
             tools=deps.tool_manager.tool_definitions,
             tool_choice="auto",
             temperature=0.0,
         )
     except Exception as e:
-        return _fail_step(step, idx, f"executor LLM 调用失败: {e}")
+        return ("error", f"executor LLM 调用失败: {e}")
 
     message = resp.choices[0].message
 
-    # 路径一：工具调用
+    # 路径一：工具调用（v1 一个 step 只取第一个 tool call）
     if message.tool_calls:
-        # v1 顺序执行：一个 step 只取第一个 tool call
         tc = message.tool_calls[0]
-        tool = tc.function.name
         try:
             args = json.loads(tc.function.arguments or "{}")
         except json.JSONDecodeError:
-            return _fail_step(step, idx, f"工具参数解析失败: {tc.function.arguments}")
-        return _run_tool(deps, step, idx, tool, args)
+            return ("error", f"工具参数解析失败: {tc.function.arguments}")
+        return ("tool", tc.function.name, args)
 
     # 路径二：无工具调用 → needs_clarify / direct_reply
     payload = parse_lenient_json(message.content or "") or {}
     if payload.get("needs_clarify"):
         question = str(payload.get("question") or message.content or "请补充更多信息").strip()
-        return {
-            "step_results": [StepResult(
-                step_id=step["id"], tool=None, input={},
-                output=None, status="needs_clarify", error=None,
-            )],
-            "clarify_question": question,
-            # idx 不前进：clarify 回答后回 executor 重试同一步
-        }
+        return ("clarify", question)
 
     reply = str(payload.get("direct_reply") or message.content or "").strip()
-    return {
-        "step_results": [StepResult(
-            step_id=step["id"], tool=None, input={},
-            output=reply, status="success", error=None,
-        )],
-        "current_step_idx": idx + 1,
-    }
+    return ("reply", reply)
 
 
 # ──────────────────── 内部辅助 ────────────────────
