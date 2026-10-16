@@ -86,7 +86,12 @@ app/
 ├── multi_agent/      # Multi-Agent 模式（orchestrator / router / agents）
 ├── plan_execute/     # ★ LangGraph Plan-and-Execute 升级
 │   ├── state.py       #    图状态（AgentState / Step / StepResult）
-│   ├── graph.py       #    图构建 + 节点（planner/executor/review/clarify/generate）
+│   ├── graph.py       #    纯图装配（节点注册 + 连线）
+│   ├── nodes/         #    5 个节点纯函数 + 共享 NodeDeps/LLM 辅助
+│   │   ├── context.py #       依赖容器 + chat 封装/JSON 容错/格式化
+│   │   ├── planner.py #       规划 / executor.py 执行+confirm
+│   │   ├── review.py  #       hybrid 路由 / clarify.py 追问
+│   │   └── generate.py#       最终回复生成
 │   ├── agent.py       #    PlanExecuteAgent 入口（接口兼容 EcomAgent）
 │   ├── checkpointer.py#    持久化工厂（memory / postgres 可切）
 │   └── prompts.py     #    各节点 prompt
@@ -103,14 +108,15 @@ main.py               # 入口：按 settings 切换运行模式
 ## 快速开始
 
 ```bash
-# 1. 安装依赖
+# 1. 激活虚拟环境并安装依赖（项目使用仓库根目录的 .venv，Python 3.11）
+source .venv/bin/activate
 pip install -r requirements.txt
 
 # 2. 配置环境变量
 cp .env.example .env
 # 编辑 .env:
 #   OPENAI_API_KEY=...
-#   OPENAI_BASE_URL=...        # 兼容 OpenAI 兼容接口
+#   OPENAI_BASE_URL=...        # OpenAI 兼容接口
 #   PLAN_EXECUTE_ENABLED=true  # 启用 Plan-and-Execute 模式
 
 # 3. 运行
@@ -118,6 +124,19 @@ python main.py
 ```
 
 交互命令：`quit/exit` 退出 · `reset` 重置对话 · `memory` 查看记忆 · `skills` 查看技能。
+
+---
+
+## 测试
+
+测试分两层，按需选择：
+
+| 层级 | 命令 | 是否需要 API key | 用途 |
+|------|------|------------------|------|
+| 离线控制流单测 | `python -m unittest tests.test_plan_execute_graph -v` | 否（mock LLM，秒级） | 验证图编排：路由、interrupt/resume、replan、工具执行幂等 |
+| 真实 API 端到端脚本 | `python tests/test_react_agent.py`（及 tests/ 下其他脚本） | 是（需先配好 `.env`） | 验证 prompt 质量、意图识别、多轮上下文等真实效果 |
+
+> 注意：所有命令都在激活 `.venv` 后、于仓库根目录执行。离线单测不触网，改完图/节点逻辑后应先跑它回归；`tests/` 下其余脚本是人工验证用的场景脚本，非自动化断言套件。
 
 ---
 

@@ -1,0 +1,300 @@
+"""Plan-and-Execute 图控制流离线单测（不需要 API key，秒级）。
+
+与 tests/ 下其他 test_*.py 的区别：
+- 那些脚本真实调用 API，验证 prompt 质量与端到端效果（需 .env 配好 key，人工跑）
+- 本文件 mock 掉 LLM（脚本化响应队列），配合真实本地 ToolManager，
+  只验证图编排的控制流：路由、interrupt/resume、replan、工具执行次数
+
+跑法（在项目 .venv 中，仓库根目录执行）：
+    python -m unittest tests.test_plan_execute_graph -v
+或直接：
+    python tests/test_plan_execute_graph.py
+"""
+
+import json
+import sys
+import types
+import unittest
+from collections import deque
+from pathlib import Path
+
+# 确保项目根目录在 sys.path 中（与 tests/ 下其他测试一致）
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from langgraph.types import Command  # noqa: E402
+
+from app.agent.tools.manager import ToolManager  # noqa: E402
+from app.plan_execute.graph import PlanExecuteGraph  # noqa: E402
+from app.plan_execute.nodes.executor import HIGH_RISK_TOOLS  # noqa: E402
+
+
+# ──────────────────── mock OpenAI 客户端 ────────────────────
+
+class _ToolCall:
+    def __init__(self, name, args):
+        self.id = f"call_{name}"
+        self.function = types.SimpleNamespace(
+            name=name, arguments=json.dumps(args, ensure_ascii=False))
+
+
+class _Message:
+    def __init__(self, content=None, tool_calls=None):
+        self.content = content
+        self.tool_calls = tool_calls
+
+
+class _Response:
+    def __init__(self, message):
+        self.choices = [types.SimpleNamespace(message=message)]
+
+
+class ScriptedClient:
+    """脚本化 mock client：按节点 system prompt 识别节点，从对应队列弹出预设响应。
+
+    队列元素：
+    - 字符串 → 作为 message.content（planner/review 的 JSON 或 executor 的无工具回复）
+    - {"__toolcall__": name, "args": {...}} → 模拟 function call
+    """
+
+    def __init__(self, planner=(), executor=(), review=(), generate=()):
+        self._queues = {
+            "planner": deque(planner),
+            "executor": deque(executor),
+            "review": deque(review),
+            "generate": deque(generate),
+        }
+        self.executed_tools: list[tuple[str, dict]] = []
+        self.chat = types.SimpleNamespace(
+            completions=types.SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs):
+        system_prompt = kwargs["messages"][0]["content"]
+        if "规划器" in system_prompt:
+            kind = "planner"
+        elif "步骤执行器" in system_prompt:
+            kind = "executor"
+        elif "执行审查器" in system_prompt:
+            kind = "review"
+        else:
+            kind = "generate"
+        item = self._queues[kind].popleft()
+        if isinstance(item, dict) and "__toolcall__" in item:
+            return _Response(_Message(tool_calls=[
+                _ToolCall(item["__toolcall__"], item["args"])]))
+        return _Response(_Message(content=item))
+
+
+# ──────────────────── 组装 / 运行辅助 ────────────────────
+
+def initial_state(query: str) -> dict:
+    return {
+        "user_query": query,
+        "messages": [{"role": "user", "content": query}],
+        "plan": [],
+        "plan_iteration": 0,
+        "step_results": [],
+        "current_step_idx": 0,
+        "review_decision": "",
+        "clarify_question": "",
+        "clarified_answer": "",
+        "final_response": "",
+    }
+
+
+def build_graph(client: ScriptedClient):
+    """真实本地 ToolManager + spy 包裹 execute_tool 记录实际调用。"""
+    tm = ToolManager(use_mcp=False)
+    real_execute = tm.execute_tool
+
+    def spy(name, args):
+        client.executed_tools.append((name, args))
+        return real_execute(name, args)
+
+    tm.execute_tool = spy
+
+    graph = PlanExecuteGraph(
+        client=client,
+        model="fake-model",
+        tool_manager=tm,
+        skill_manager=None,
+        memory_manager=None,
+    ).build()
+    return graph
+
+
+def invoke_to_end(graph, state, resumes=None):
+    """invoke + interrupt/resume 循环，返回最终图状态 values。
+
+    resumes: {interrupt 类型: deque([resume 值, ...])}，按中断顺序消费。
+    """
+    resumes = resumes or {}
+    config = {"configurable": {"thread_id": "test-thread"}}
+    graph.invoke(state, config)
+    while True:
+        st = graph.get_state(config)
+        if not st.next:
+            break
+        interrupt_value = st.tasks[0].interrupts[0].value
+        resume_value = resumes[interrupt_value["type"]].popleft()
+        graph.invoke(Command(resume=resume_value), config)
+    return graph.get_state(config).values
+
+
+def plan_one_step(desc, tool_hint=None):
+    return json.dumps(
+        {"steps": [{"id": "step_1", "description": desc, "tool_hint": tool_hint}]},
+        ensure_ascii=False,
+    )
+
+
+# ──────────────────── 测试用例 ────────────────────
+
+class PlanExecuteGraphFlowTest(unittest.TestCase):
+    """覆盖 6 类控制流路径。"""
+
+    def setUp(self):
+        # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
+        self.addCleanup(HIGH_RISK_TOOLS.clear)
+
+    def test_tool_success_path(self):
+        """A: planner → executor 工具调用成功 → generate。"""
+        client = ScriptedClient(
+            planner=[plan_one_step("查询订单详情", "query_order")],
+            executor=[{"__toolcall__": "query_order",
+                       "args": {"order_id": "ORD-20240115-001"}}],
+            generate=["您的订单状态是已发货～"],
+        )
+        values = invoke_to_end(build_graph(client), initial_state("查下订单 ORD-20240115-001"))
+
+        result = values["step_results"][0]
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["tool"], "query_order")
+        self.assertIn("已发货", values["final_response"])
+        self.assertIn(
+            ("query_order", {"order_id": "ORD-20240115-001"}),
+            client.executed_tools,
+        )
+
+    def test_clarify_then_retry_same_step(self):
+        """B: 缺信息 → clarify interrupt → 用户回答 → 重试同一步成功。"""
+        client = ScriptedClient(
+            planner=[plan_one_step("查询物流", "query_logistics")],
+            executor=[
+                '{"needs_clarify": true, "question": "请问订单号是多少？"}',
+                {"__toolcall__": "query_logistics",
+                 "args": {"order_id": "ORD-20240115-001"}},
+            ],
+            generate=["物流信息查到啦"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("我的订单到哪了"),
+            resumes={"clarify": deque([{"text": "ORD-20240115-001"}])},
+        )
+
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["needs_clarify", "success"],
+        )
+        self.assertEqual(values["step_results"][-1]["tool"], "query_logistics")
+        self.assertEqual(values["clarified_answer"], "ORD-20240115-001")
+
+    def test_failed_then_replan_recovers(self):
+        """C: 最后一步 failed → review LLM 判 replan → 新计划执行成功。
+
+        回归点：failed 也推进 idx，"全部完成"判断不得吃掉 failed 的 replan 机会。
+        """
+        client = ScriptedClient(
+            planner=[
+                plan_one_step("按订单号查询", "query_order"),
+                plan_one_step("列出用户订单", "list_user_orders"),
+            ],
+            executor=[
+                {"__toolcall__": "query_order", "args": {"order_id": "ORD-NOPE"}},
+                {"__toolcall__": "list_user_orders", "args": {}},
+            ],
+            review=['{"decision": "replan", "reason": "订单号查不到，先列订单"}'],
+            generate=["已为您列出订单"],
+        )
+        values = invoke_to_end(build_graph(client), initial_state("查 ORD-NOPE"))
+
+        self.assertEqual(values["plan_iteration"], 2)
+        self.assertEqual(len(values["plan"]), 1)
+        self.assertIn("列出", values["plan"][0]["description"])
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["failed", "success"],
+        )
+
+    def test_confirm_rejected_skips_tool(self):
+        """D: 高风险工具审批被拒 → skipped，工具绝不执行。"""
+        HIGH_RISK_TOOLS.add("apply_refund")
+        client = ScriptedClient(
+            planner=[plan_one_step("申请退款", "apply_refund")],
+            executor=[{"__toolcall__": "apply_refund",
+                       "args": {"order_id": "ORD-20240120-002", "reason": "不想要了"}}],
+            generate=["好的，暂不操作退款"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("帮我退款"),
+            resumes={"confirm": deque([{"approved": False}])},
+        )
+
+        self.assertEqual(values["step_results"][-1]["status"], "skipped")
+        self.assertEqual(client.executed_tools, [])
+
+    def test_confirm_approved_executes_once(self):
+        """E: 审批通过 → 成功执行，且 resume 重放下工具只执行一次（幂等回归）。"""
+        HIGH_RISK_TOOLS.add("apply_refund")
+        client = ScriptedClient(
+            planner=[plan_one_step("申请退款", "apply_refund")],
+            executor=[{"__toolcall__": "apply_refund",
+                       "args": {"order_id": "ORD-20240120-002", "reason": "不想要了"}}],
+            generate=["退款已发起"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("帮我退款"),
+            resumes={"confirm": deque([{"approved": True}])},
+        )
+
+        self.assertEqual(values["step_results"][-1]["status"], "success")
+        self.assertEqual(
+            client.executed_tools,
+            [("apply_refund",
+              {"order_id": "ORD-20240120-002", "reason": "不想要了"})],
+        )
+
+    def test_direct_reply_no_tool(self):
+        """F: 无需工具的步骤（闲聊）→ direct_reply 成功，不调任何工具。"""
+        client = ScriptedClient(
+            planner=[plan_one_step("直接回复用户的问候")],
+            executor=['{"direct_reply": "你好呀，我是小夕，有什么可以帮你？"}'],
+            generate=["你好呀～"],
+        )
+        values = invoke_to_end(build_graph(client), initial_state("你好"))
+
+        result = values["step_results"][0]
+        self.assertEqual(result["status"], "success")
+        self.assertIsNone(result["tool"])
+        self.assertIn("你好呀", result["output"])
+        self.assertEqual(client.executed_tools, [])
+
+    def test_planner_garbage_output_fallback(self):
+        """G: planner 返回非法 JSON → 兜底单步计划，图仍可走通。"""
+        client = ScriptedClient(
+            planner=["我也不知道该咋办"],
+            executor=['{"direct_reply": "抱歉能再说详细些吗？"}'],
+            generate=["请补充描述"],
+        )
+        values = invoke_to_end(build_graph(client), initial_state("???"))
+
+        self.assertEqual(len(values["plan"]), 1)
+        self.assertIn("直接回复", values["plan"][0]["description"])
+        self.assertEqual(values["step_results"][0]["status"], "success")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
