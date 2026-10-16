@@ -1,0 +1,150 @@
+"""executor 节点：执行单个 step。
+
+流程：LLM 用 step.description + 历史 step_results + clarified_answer 动态解析动作
+  - 信息充足 → 返回 tool_call（OpenAI function calling，schema 即工具定义）
+  - 信息不足 → 不调工具，内容为 {"needs_clarify": true, "question": "..."}
+  - 无需工具的步骤（闲聊/直接回复）→ {"direct_reply": "..."}
+高风险工具执行前触发 confirm interrupt（强绑定具体 tool call）。
+每次只跑 plan[current_step_idx]，跑完交棒 review。
+"""
+
+from __future__ import annotations
+
+import json
+
+from langgraph.types import interrupt
+
+from app.plan_execute.nodes.context import (
+    NodeDeps,
+    chat_completion,
+    classify_tool_output,
+    format_step_results,
+    parse_lenient_json,
+)
+from app.plan_execute.prompts import EXECUTOR_PROMPT
+from app.plan_execute.state import AgentState, Step, StepResult
+
+# 高风险工具白名单：执行前触发 confirm interrupt
+# TODO（任务4）: 填入真实工具名, e.g. {"apply_refund"}
+HIGH_RISK_TOOLS: set[str] = set()
+
+
+def executor_node(state: AgentState, deps: NodeDeps) -> dict:
+    idx = state["current_step_idx"]
+    step: Step = state["plan"][idx]
+
+    user_content = _build_user_content(step, state)
+
+    try:
+        resp = chat_completion(
+            deps,
+            messages=[
+                {"role": "system", "content": EXECUTOR_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            tools=deps.tool_manager.tool_definitions,
+            tool_choice="auto",
+            temperature=0.0,
+        )
+    except Exception as e:
+        return _fail_step(step, idx, f"executor LLM 调用失败: {e}")
+
+    message = resp.choices[0].message
+
+    # 路径一：工具调用
+    if message.tool_calls:
+        # v1 顺序执行：一个 step 只取第一个 tool call
+        tc = message.tool_calls[0]
+        tool = tc.function.name
+        try:
+            args = json.loads(tc.function.arguments or "{}")
+        except json.JSONDecodeError:
+            return _fail_step(step, idx, f"工具参数解析失败: {tc.function.arguments}")
+        return _run_tool(deps, step, idx, tool, args)
+
+    # 路径二：无工具调用 → needs_clarify / direct_reply
+    payload = parse_lenient_json(message.content or "") or {}
+    if payload.get("needs_clarify"):
+        question = str(payload.get("question") or message.content or "请补充更多信息").strip()
+        return {
+            "step_results": [StepResult(
+                step_id=step["id"], tool=None, input={},
+                output=None, status="needs_clarify", error=None,
+            )],
+            "clarify_question": question,
+            # idx 不前进：clarify 回答后回 executor 重试同一步
+        }
+
+    reply = str(payload.get("direct_reply") or message.content or "").strip()
+    return {
+        "step_results": [StepResult(
+            step_id=step["id"], tool=None, input={},
+            output=reply, status="success", error=None,
+        )],
+        "current_step_idx": idx + 1,
+    }
+
+
+# ──────────────────── 内部辅助 ────────────────────
+
+def _run_tool(deps: NodeDeps, step: Step, idx: int, tool: str, args: dict) -> dict:
+    """confirm 审批 → 执行工具 → 归类结果（在节点调用栈内，interrupt 正常生效）。"""
+
+    # confirm：高风险工具执行前 interrupt 等用户确认
+    if tool in HIGH_RISK_TOOLS:
+        approval = interrupt({
+            "type": "confirm",
+            "action": step["description"],
+            "context": {"tool": tool, "args": args},
+        })
+        if not approval.get("approved"):
+            return {
+                "step_results": [StepResult(
+                    step_id=step["id"], tool=tool, input=args,
+                    output=None, status="skipped", error="用户拒绝确认",
+                )],
+                "current_step_idx": idx + 1,
+            }
+
+    print(f"🔧 [执行] step {step['id']} → {tool}({json.dumps(args, ensure_ascii=False)})")
+    try:
+        raw = deps.tool_manager.execute_tool(tool, args)
+        status, error = classify_tool_output(raw)
+    except Exception as e:
+        raw, status, error = None, "failed", f"工具执行异常: {e}"
+
+    return {
+        "step_results": [StepResult(
+            step_id=step["id"], tool=tool, input=args,
+            output=raw, status=status, error=error,
+        )],
+        "current_step_idx": idx + 1,
+    }
+
+
+def _build_user_content(step: Step, state: AgentState) -> str:
+    parts = [
+        f"【用户请求】{state['user_query']}",
+        f"【当前步骤】{step['id']}: {step['description']}"
+        f"（工具提示: {step.get('tool_hint') or '无'}）",
+        f"【已完成步骤的结果】\n{format_step_results(state.get('step_results', []))}",
+    ]
+    clarified = state.get("clarified_answer")
+    if clarified:
+        parts.append(f"【用户刚补充的信息】{clarified}")
+    parts.append(
+        "请决定：调用一个工具；或在信息不足时输出 "
+        '{"needs_clarify": true, "question": "向用户追问的问题"}；'
+        '若本步无需工具即可回复，输出 {"direct_reply": "回复内容"}。'
+    )
+    return "\n\n".join(parts)
+
+
+def _fail_step(step: Step, idx: int, error: str) -> dict:
+    return {
+        "step_results": [StepResult(
+            step_id=step["id"], tool=None, input={},
+            output=None, status="failed", error=error,
+        )],
+        "current_step_idx": idx + 1,
+    }

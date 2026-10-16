@@ -79,8 +79,10 @@ class PlanExecuteAgent:
         self.graph = PlanExecuteGraph(
             client=self.client,
             model=self.model,
+            temperature=self.temperature,
             tool_manager=self.tool_manager,
             skill_manager=self.skill_manager,
+            memory_manager=self.memory_manager,
         ).build()
 
     @property
