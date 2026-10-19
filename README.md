@@ -4,7 +4,7 @@
 
 一个面向电商客服场景的智能 Agent 系统，支持订单查询、退换货、商品咨询、售后等全链路工单处理。通过可切换的执行范式（ReAct / Multi-Agent / Plan-and-Execute）探索不同 Agent 架构在真实业务下的取舍。
 
----
+***
 
 ## 核心升级：基于 LangGraph 的 Plan-and-Execute
 
@@ -56,16 +56,16 @@
 
 > 详细设计决策、trade-off 与面试讲点见 [docs/plan-execute-design.md](docs/plan-execute-design.md)。
 
----
+***
 
 ## 系统架构
 
 项目支持三种可切换的 Agent 执行范式，通过 `.env` 开关选择：
 
-| 模式 | 开关 | 特点 | 适用场景 |
-|------|------|------|---------|
-| ReAct + MCP + RAG | 默认 | 思考-行动-观察循环，工具调用 + 知识检索 | 单轮、即时问答 |
-| Multi-Agent | `MULTI_AGENT_ENABLED=true` | Router 路由 + 子 Agent 分工 | 按意图领域隔离 |
+| 模式                   | 开关                          | 特点                           | 适用场景      |
+| -------------------- | --------------------------- | ---------------------------- | --------- |
+| ReAct + MCP + RAG    | 默认                          | 思考-行动-观察循环，工具调用 + 知识检索       | 单轮、即时问答   |
+| Multi-Agent          | `MULTI_AGENT_ENABLED=true`  | Router 路由 + 子 Agent 分工       | 按意图领域隔离   |
 | **Plan-and-Execute** | `PLAN_EXECUTE_ENABLED=true` | LangGraph 图编排 + 动态重规划 + HITL | 长链路、多步骤工单 |
 
 ### 能力矩阵
@@ -76,7 +76,7 @@
 - **技能模块**：Markdown 形式的可复用流程编排（`app/skills/`）
 - **评估体系**：过程层（工具准确率/调用效率）+ 结果层（意图/忠实度/回答质量）双维度离线评测
 
----
+***
 
 ## 项目结构
 
@@ -103,7 +103,7 @@ app/
 main.py               # 入口：按 settings 切换运行模式
 ```
 
----
+***
 
 ## 快速开始
 
@@ -125,20 +125,22 @@ python main.py
 
 交互命令：`quit/exit` 退出 · `reset` 重置对话 · `memory` 查看记忆 · `skills` 查看技能。
 
----
+***
 
 ## 测试
 
 测试分两层，按需选择：
 
-| 层级 | 命令 | 是否需要 API key | 用途 |
-|------|------|------------------|------|
-| 离线控制流单测 | `python -m unittest tests.test_plan_execute_graph -v` | 否（mock LLM，秒级） | 验证图编排：路由、interrupt/resume、replan、工具执行幂等 |
-| 真实 API 端到端脚本 | `python tests/test_react_agent.py`（及 tests/ 下其他脚本） | 是（需先配好 `.env`） | 验证 prompt 质量、意图识别、多轮上下文等真实效果 |
+| 层级           | 命令                                                    | 是否需要 API key   | 用途                                      |
+| ------------ | ----------------------------------------------------- | -------------- | --------------------------------------- |
+| 离线控制流单测      | `python -m unittest tests.test_plan_execute_graph -v` | 否（mock LLM，秒级） | 验证图编排：路由、interrupt/resume、replan、工具执行幂等 |
+| 真实 API 端到端脚本 | `python tests/test_react_agent.py`（及 tests/ 下其他脚本）    | 是（需先配好 `.env`） | 验证 prompt 质量、意图识别、多轮上下文等真实效果            |
 
 > 注意：所有命令都在激活 `.venv` 后、于仓库根目录执行。离线单测不触网，改完图/节点逻辑后应先跑它回归；`tests/` 下其余脚本是人工验证用的场景脚本，非自动化断言套件。
+>
+> 完整测试指南（离线用例覆盖矩阵、Plan-and-Execute 端到端验证话术、运行时日志对照、预期边界）见 [docs/test.md](docs/test.md)。
 
----
+***
 
 ## 技术栈
 
@@ -149,7 +151,7 @@ python main.py
 - **数据校验**：Pydantic v2
 - **语言**：Python 3.10+
 
----
+***
 
 ## License
 
