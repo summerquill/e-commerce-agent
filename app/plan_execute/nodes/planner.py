@@ -6,6 +6,8 @@ replan 时（plan_iteration>0）读旧 plan + step_results 作上下文重规划
 
 from __future__ import annotations
 
+from langchain_core.messages import convert_to_openai_messages
+
 from app.plan_execute.nodes.context import (
     NodeDeps,
     chat_completion,
@@ -28,8 +30,10 @@ def planner_node(state: AgentState, deps: NodeDeps) -> dict:
 
     messages: list[dict] = [{"role": "system", "content": system_content}]
     messages.extend(memory_sections(deps))
-    # state["messages"]：首轮为用户原始请求；后续 task3 将注入跨轮 summary/history
-    messages.extend(state.get("messages", []))
+    # state["messages"]：经 add_messages reducer 后是 LangChain Message 对象，
+    # 直接透传 OpenAI SDK 会缺 role 字段（422），统一转回 {role, content} dict；
+    # 后续 task3 将在 _build_input 注入跨轮 summary/history，同样走此转换
+    messages.extend(convert_to_openai_messages(state.get("messages", [])))
 
     if is_replan:
         messages.append({
