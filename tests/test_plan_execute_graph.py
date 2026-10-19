@@ -97,6 +97,7 @@ def initial_state(query: str) -> dict:
         "current_step_idx": 0,
         "review_decision": "",
         "clarify_question": "",
+        "clarify_options": [],
         "clarified_answer": "",
         "final_response": "",
     }
@@ -123,10 +124,11 @@ def build_graph(client: ScriptedClient):
     return graph
 
 
-def invoke_to_end(graph, state, resumes=None):
+def invoke_to_end(graph, state, resumes=None, seen_interrupts=None):
     """invoke + interrupt/resume 循环，返回最终图状态 values。
 
     resumes: {interrupt 类型: deque([resume 值, ...])}，按中断顺序消费。
+    seen_interrupts: 可选 list，依次收集每次 interrupt 的 payload 供断言。
     """
     resumes = resumes or {}
     config = {"configurable": {"thread_id": "test-thread"}}
@@ -136,6 +138,8 @@ def invoke_to_end(graph, state, resumes=None):
         if not st.next:
             break
         interrupt_value = st.tasks[0].interrupts[0].value
+        if seen_interrupts is not None:
+            seen_interrupts.append(interrupt_value)
         resume_value = resumes[interrupt_value["type"]].popleft()
         graph.invoke(Command(resume=resume_value), config)
     return graph.get_state(config).values
@@ -151,7 +155,7 @@ def plan_one_step(desc, tool_hint=None):
 # ──────────────────── 测试用例 ────────────────────
 
 class PlanExecuteGraphFlowTest(unittest.TestCase):
-    """覆盖 6 类控制流路径。"""
+    """覆盖 8 类控制流路径。"""
 
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
@@ -177,7 +181,10 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
         )
 
     def test_clarify_then_retry_same_step(self):
-        """B: 缺信息 → clarify interrupt → 用户回答 → 重试同一步成功。"""
+        """B: 缺信息 → clarify interrupt → 用户回答 → 重试同一步成功。
+
+        回归点：追问不带 options 时 payload 无 options 键（向后兼容）。
+        """
         client = ScriptedClient(
             planner=[plan_one_step("查询物流", "query_logistics")],
             executor=[
@@ -187,10 +194,12 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
             ],
             generate=["物流信息查到啦"],
         )
+        seen = []
         values = invoke_to_end(
             build_graph(client),
             initial_state("我的订单到哪了"),
             resumes={"clarify": deque([{"text": "ORD-20240115-001"}])},
+            seen_interrupts=seen,
         )
 
         self.assertEqual(
@@ -199,6 +208,7 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
         )
         self.assertEqual(values["step_results"][-1]["tool"], "query_logistics")
         self.assertEqual(values["clarified_answer"], "ORD-20240115-001")
+        self.assertNotIn("options", seen[0])
 
     def test_failed_then_replan_recovers(self):
         """C: 最后一步 failed → review LLM 判 replan → 新计划执行成功。
@@ -294,6 +304,43 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
         self.assertEqual(len(values["plan"]), 1)
         self.assertIn("直接回复", values["plan"][0]["description"])
         self.assertEqual(values["step_results"][0]["status"], "success")
+
+    def test_clarify_with_options_payload(self):
+        """H: needs_clarify 带 options → interrupt payload 含候选，
+        回答后重试同一步成功（结构化追问链路回归）。
+        """
+        client = ScriptedClient(
+            planner=[plan_one_step("申请退款", "apply_refund")],
+            executor=[
+                '{"needs_clarify": true, "question": "请问退款原因是什么？", '
+                '"options": ["不想要了", "质量问题", "七天无理由"]}',
+                {"__toolcall__": "apply_refund",
+                 "args": {"order_id": "ORD-20240120-002", "reason": "质量问题"}},
+            ],
+            generate=["退款已发起"],
+        )
+        seen = []
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("我要退款"),
+            resumes={"clarify": deque([{"text": "质量问题"}])},
+            seen_interrupts=seen,
+        )
+
+        self.assertEqual(seen[0]["type"], "clarify")
+        self.assertEqual(seen[0]["question"], "请问退款原因是什么？")
+        self.assertEqual(
+            seen[0]["options"], ["不想要了", "质量问题", "七天无理由"])
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["needs_clarify", "success"],
+        )
+        self.assertEqual(values["clarified_answer"], "质量问题")
+        self.assertEqual(
+            client.executed_tools,
+            [("apply_refund",
+              {"order_id": "ORD-20240120-002", "reason": "质量问题"})],
+        )
 
 
 if __name__ == "__main__":
