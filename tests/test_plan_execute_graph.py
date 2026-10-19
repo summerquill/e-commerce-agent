@@ -99,9 +99,7 @@ def initial_state(query: str) -> dict:
         "step_results": [],
         "current_step_idx": 0,
         "review_decision": "",
-        "clarify_question": "",
-        "clarify_options": [],
-        "clarified_answer": "",
+        "pending_clarification": None,
         "final_response": "",
     }
 
@@ -155,10 +153,18 @@ def plan_one_step(desc, tool_hint=None):
     )
 
 
+def message_contents(messages) -> list[str]:
+    """取对话记录文本内容（兼容 dict 与 LangChain Message 对象）。"""
+    return [
+        m["content"] if isinstance(m, dict) else m.content
+        for m in messages
+    ]
+
+
 # ──────────────────── 测试用例 ────────────────────
 
 class PlanExecuteGraphFlowTest(unittest.TestCase):
-    """覆盖 9 类控制流路径。"""
+    """覆盖 10 类控制流路径。"""
 
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
@@ -210,7 +216,9 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
             ["needs_clarify", "success"],
         )
         self.assertEqual(values["step_results"][-1]["tool"], "query_logistics")
-        self.assertEqual(values["clarified_answer"], "ORD-20240115-001")
+        # 问答进对话记录（messages），pending 已清空
+        self.assertIn("ORD-20240115-001", " ".join(message_contents(values["messages"])))
+        self.assertIsNone(values["pending_clarification"])
         self.assertNotIn("options", seen[0])
 
     def test_failed_then_replan_recovers(self):
@@ -358,11 +366,63 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
             [r["status"] for r in values["step_results"]],
             ["needs_clarify", "success"],
         )
-        self.assertEqual(values["clarified_answer"], "质量问题")
+        self.assertIn("质量问题", " ".join(message_contents(values["messages"])))
         self.assertEqual(
             client.executed_tools,
             [("apply_refund",
               {"order_id": "ORD-20240120-002", "reason": "质量问题"})],
+        )
+
+    def test_multi_round_clarify_keeps_earlier_answers(self):
+        """J: 同一步两轮追问 → 第一轮答案不得被第二轮覆盖。
+
+        回归（manual-test 发现）：旧实现 clarified_answer 为单槽位，
+        第二轮回答覆盖第一轮，executor 丢失已选订单信息导致重复追问。
+        新实现：问答 append 进 messages 对话记录，executor 最终一次请求
+        的上下文必须同时包含两轮回答。
+        """
+        client = ScriptedClient(
+            planner=[plan_one_step("为用户选定的订单发起退款", "apply_refund")],
+            executor=[
+                '{"needs_clarify": true, "question": "请问要为哪个订单退款？", '
+                '"options": ["Nike Air Max 270 运动鞋", "AirPods Pro 2"]}',
+                '{"needs_clarify": true, "question": "请问退款原因是什么？", '
+                '"options": ["尺码不合适", "不想要了"]}',
+                {"__toolcall__": "apply_refund",
+                 "args": {"order_id": "ORD-20240115-001", "reason": "尺码不合适"}},
+            ],
+            generate=["退款已发起"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("我要退款"),
+            resumes={"clarify": deque([
+                {"text": "Nike Air Max 270 运动鞋"},
+                {"text": "尺码不合适"},
+            ])},
+        )
+
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["needs_clarify", "needs_clarify", "success"],
+        )
+        # 最后一轮 executor 请求的对话记录里，两轮回答同时在
+        executor_reqs = [
+            msgs for msgs in client.captured_request_messages
+            if any("【当前步骤】" in str(m.get("content", "")) for m in msgs)
+        ]
+        self.assertEqual(len(executor_reqs), 3)
+        last_dialogue = " ".join(
+            str(m.get("content", "")) for m in executor_reqs[-1]
+        )
+        self.assertIn("Nike Air Max 270 运动鞋", last_dialogue)
+        self.assertIn("尺码不合适", last_dialogue)
+        # 工具成功执行，答案解析结果落 step_results（结构化上下文）
+        self.assertEqual(values["pending_clarification"], None)
+        self.assertEqual(
+            client.executed_tools,
+            [("apply_refund",
+              {"order_id": "ORD-20240115-001", "reason": "尺码不合适"})],
         )
 
 
