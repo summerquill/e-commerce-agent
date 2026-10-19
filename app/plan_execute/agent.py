@@ -162,9 +162,7 @@ class PlanExecuteAgent:
             "step_results": [],
             "current_step_idx": 0,
             "review_decision": "",
-            "clarify_question": "",
-            "clarify_options": [],
-            "clarified_answer": "",
+            "pending_clarification": None,
             "final_response": "",
         }
 

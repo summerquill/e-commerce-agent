@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any, Optional, TypedDict
 
 from langgraph.graph import add_messages
 
@@ -17,7 +17,7 @@ from langgraph.graph import add_messages
 class Step(TypedDict):
     """计划中的一个步骤（描述型，不含具体 args）。
 
-    args 由 executor 执行时根据 step_results + clarified_answer 动态解析，
+    args 由 executor 执行时根据对话记录（messages）+ step_results 动态解析，
     因此 plan 阶段无法填出 args（依赖关系由 LLM 隐式解析）。
     """
 
@@ -54,9 +54,11 @@ class AgentState(TypedDict):
 
     # —— 路由 ——
     review_decision: str     # done | continue | clarify | replan
-    clarify_question: str    # executor 设置 → clarify 读取
-    clarify_options: list[str]  # executor 追问候选（可空），透传进 interrupt payload
-    clarified_answer: str     # clarify interrupt resume 后写入
+
+    # —— HITL 追问 ——
+    # 当前打开的追问（executor 发起时写入，clarify 回答后清空）；
+    # 问答本身作为对话记录追加进 messages，回答经 executor 解析后落到 step_results
+    pending_clarification: Optional[dict]  # {"question": str, "options": list[str]} | None
 
     # —— 输出 ——
     final_response: str

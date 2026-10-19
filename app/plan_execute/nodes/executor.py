@@ -1,8 +1,9 @@
 """executor 节点：执行单个 step。
 
-流程：LLM 用 step.description + 历史 step_results + clarified_answer 动态解析动作
+流程：LLM 用 step.description + 对话记录（messages，含追问问答）+ step_results 动态解析动作
   - 信息充足 → 返回 tool_call（OpenAI function calling，schema 即工具定义）
-  - 信息不足 → 不调工具，内容为 {"needs_clarify": true, "question": "...", "options"?: [...]}
+  - 信息不足 → 不调工具，内容为 {"needs_clarify": true, "question": "...", "options"?: [...]},
+    同时写入 pending_clarification 交 clarify 节点发起 HITL
   - 无需工具的步骤（闲聊/直接回复）→ {"direct_reply": "..."}
 高风险工具执行前触发 confirm interrupt（强绑定具体 tool call）。
 每次只跑 plan[current_step_idx]，跑完交棒 review。
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import json
 
+from langchain_core.messages import convert_to_openai_messages
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
@@ -42,7 +44,7 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
         state.get("plan_iteration", 0),
         idx,
         len(state.get("step_results", [])),
-        state.get("clarified_answer", ""),
+        len(state.get("messages", [])),  # clarify 问答每轮追加，对话长度区分轮次
     )
     action = deps.resolve_cache.get(cache_key)
     if action is None:
@@ -60,8 +62,10 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
                 step_id=step["id"], tool=None, input={},
                 output=None, status="needs_clarify", error=None,
             )],
-            "clarify_question": action[1],
-            "clarify_options": list(action[2] or []),
+            "pending_clarification": {
+                "question": action[1],
+                "options": list(action[2] or []),
+            },
             # idx 不前进：clarify 回答后回 executor 重试同一步
         }
 
@@ -81,12 +85,16 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
 def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
     """LLM 解析当前步动作。返回元组：
     ("tool", name, args) | ("clarify", question, options) | ("reply", text) | ("error", msg)
+
+    上下文三层：system 契约 → messages 对话记录（含历史追问问答，append-only）→
+    当前步任务卡（step + step_results + 指令）。
     """
     try:
         resp = chat_completion(
             deps,
             messages=[
                 {"role": "system", "content": EXECUTOR_PROMPT},
+                *convert_to_openai_messages(state.get("messages", [])),
                 {"role": "user", "content": _build_user_content(step, state)},
             ],
             tools=deps.tool_manager.tool_definitions,
@@ -160,15 +168,15 @@ def _run_tool(deps: NodeDeps, step: Step, idx: int, tool: str, args: dict) -> di
 
 
 def _build_user_content(step: Step, state: AgentState) -> str:
+    """当前步任务卡：步骤语义 + 结构化执行日志 + 输出指令。
+
+    用户请求与追问问答都在 messages 对话记录中，此处不重复。
+    """
     parts = [
-        f"【用户请求】{state['user_query']}",
         f"【当前步骤】{step['id']}: {step['description']}"
         f"（工具提示: {step.get('tool_hint') or '无'}）",
         f"【已完成步骤的结果】\n{format_step_results(state.get('step_results', []))}",
     ]
-    clarified = state.get("clarified_answer")
-    if clarified:
-        parts.append(f"【用户刚补充的信息】{clarified}")
     parts.append(
         "请决定：调用一个工具；或在信息不足时输出 "
         '{"needs_clarify": true, "question": "向用户追问的问题", '

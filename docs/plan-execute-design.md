@@ -99,7 +99,9 @@
 
 plan 里的 step 是**语义描述**（`{id, description, tool_hint}`），**不含工具参数**。因为 planner 规划时根本不知道执行会查出什么（如 T2 查物流需要 T1 查出的订单号）。
 
-executor 执行时，LLM 读 `step 描述 + 历史 step_results + clarified_answer` 动态解析出 `{tool, args}`，从上游结果里自动取依赖数据。
+executor 执行时，LLM 按「system 契约 → messages 对话记录 → 当前步任务卡」三层上下文动态解析出 `{tool, args}`：用户请求与 clarify 问答都在 messages 里（append-only，顺序天然消歧），上游工具结果在 step_results 里，依赖数据自动取用。
+
+> **状态管理决策（manual-test 实测后修订）**：追问答案不放独立字段（`clarified_answer` 单槽位会被下一轮覆盖，多轮追问时丢失前序答案，导致重复追问）。改为：① 问答作为对话记录追加进 `messages`；② 当前交互用单个 `pending_clarification` 槽位（executor 写入 → clarify interrupt → 清空）；③ 解析后的信息随工具执行落 `step_results`（结构化 + 校验）。对话记录管"说过什么"，结构化上下文管"确定的事实"。
 
 **为什么不用显式 DAG / 模板占位符**（如 `$from:T1.order_id`）：
 - DAG 要维护依赖图 + 拓扑排序 + 模板解析，复杂度高
