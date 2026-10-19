@@ -65,10 +65,13 @@ class ScriptedClient:
             "generate": deque(generate),
         }
         self.executed_tools: list[tuple[str, dict]] = []
+        # 捕获每次实际发给 SDK 的 messages（报文契约回归用）
+        self.captured_request_messages: list[list] = []
         self.chat = types.SimpleNamespace(
             completions=types.SimpleNamespace(create=self._create))
 
     def _create(self, **kwargs):
+        self.captured_request_messages.append(kwargs["messages"])
         system_prompt = kwargs["messages"][0]["content"]
         if "规划器" in system_prompt:
             kind = "planner"
@@ -155,7 +158,7 @@ def plan_one_step(desc, tool_hint=None):
 # ──────────────────── 测试用例 ────────────────────
 
 class PlanExecuteGraphFlowTest(unittest.TestCase):
-    """覆盖 8 类控制流路径。"""
+    """覆盖 9 类控制流路径。"""
 
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
@@ -291,6 +294,26 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
         self.assertIsNone(result["tool"])
         self.assertIn("你好呀", result["output"])
         self.assertEqual(client.executed_tools, [])
+
+    def test_all_llm_request_messages_have_role(self):
+        """I: 发给 SDK 的每条消息必须是 {role, content} dict。
+
+        回归：state["messages"] 经 add_messages reducer 变成 LangChain Message
+        对象，planner 透传前必须转回 OpenAI 格式，否则真实 API 422
+        （missing field `role`）。mock 不校验报文格式，故离线显式断言。
+        """
+        client = ScriptedClient(
+            planner=[plan_one_step("直接回复用户的问候")],
+            executor=['{"direct_reply": "你好呀～"}'],
+            generate=["你好呀"],
+        )
+        invoke_to_end(build_graph(client), initial_state("你好"))
+
+        self.assertTrue(client.captured_request_messages)
+        for req_msgs in client.captured_request_messages:
+            for m in req_msgs:
+                self.assertIsInstance(m, dict, f"非 dict 消息: {m!r}")
+                self.assertIn("role", m, f"缺 role 的消息: {m!r}")
 
     def test_planner_garbage_output_fallback(self):
         """G: planner 返回非法 JSON → 兜底单步计划，图仍可走通。"""
