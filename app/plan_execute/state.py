@@ -54,7 +54,8 @@ class AgentState(TypedDict):
 
     # —— 路由 ——
     review_decision: str     # done | continue | clarify | replan
-    clarify_question: str    # review 设置 → clarify 读取
+    clarify_question: str    # executor 设置 → clarify 读取
+    clarify_options: list[str]  # executor 追问候选（可空），透传进 interrupt payload
     clarified_answer: str     # clarify interrupt resume 后写入
 
     # —— 输出 ——

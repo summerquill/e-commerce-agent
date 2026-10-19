@@ -133,8 +133,17 @@ class PlanExecuteAgent:
             approved = input("👤 你: ").strip().lower() in ("y", "yes", "是")
             return {"approved": approved}
         if iv_type == "clarify":
+            options = iv.get("options") or []
             print(f"\n❓ {iv.get('question')}")
-            text = input("👤 你: ").strip()
+            if options:
+                # 结构化追问：渲染序号点选；输入序号外的内容按自由文本处理
+                for i, opt in enumerate(options, 1):
+                    print(f"   {i}. {opt}")
+                text = input(f"👤 你（输入 1-{len(options)} 或直接回答）: ").strip()
+                if text.isdigit() and 1 <= int(text) <= len(options):
+                    text = options[int(text) - 1]
+            else:
+                text = input("👤 你: ").strip()
             return {"text": text}
         # 未知类型：放行
         return {}
@@ -154,6 +163,7 @@ class PlanExecuteAgent:
             "current_step_idx": 0,
             "review_decision": "",
             "clarify_question": "",
+            "clarify_options": [],
             "clarified_answer": "",
             "final_response": "",
         }

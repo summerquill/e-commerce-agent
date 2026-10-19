@@ -2,7 +2,7 @@
 
 流程：LLM 用 step.description + 历史 step_results + clarified_answer 动态解析动作
   - 信息充足 → 返回 tool_call（OpenAI function calling，schema 即工具定义）
-  - 信息不足 → 不调工具，内容为 {"needs_clarify": true, "question": "..."}
+  - 信息不足 → 不调工具，内容为 {"needs_clarify": true, "question": "...", "options"?: [...]}
   - 无需工具的步骤（闲聊/直接回复）→ {"direct_reply": "..."}
 高风险工具执行前触发 confirm interrupt（强绑定具体 tool call）。
 每次只跑 plan[current_step_idx]，跑完交棒 review。
@@ -61,6 +61,7 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
                 output=None, status="needs_clarify", error=None,
             )],
             "clarify_question": action[1],
+            "clarify_options": list(action[2] or []),
             # idx 不前进：clarify 回答后回 executor 重试同一步
         }
 
@@ -79,7 +80,7 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
 
 def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
     """LLM 解析当前步动作。返回元组：
-    ("tool", name, args) | ("clarify", question) | ("reply", text) | ("error", msg)
+    ("tool", name, args) | ("clarify", question, options) | ("reply", text) | ("error", msg)
     """
     try:
         resp = chat_completion(
@@ -110,7 +111,12 @@ def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
     payload = parse_lenient_json(message.content or "") or {}
     if payload.get("needs_clarify"):
         question = str(payload.get("question") or message.content or "请补充更多信息").strip()
-        return ("clarify", question)
+        raw_options = payload.get("options")
+        options = (
+            [str(o).strip() for o in raw_options if str(o).strip()]
+            if isinstance(raw_options, list) else []
+        )
+        return ("clarify", question, options)
 
     reply = str(payload.get("direct_reply") or message.content or "").strip()
     return ("reply", reply)
@@ -165,7 +171,8 @@ def _build_user_content(step: Step, state: AgentState) -> str:
         parts.append(f"【用户刚补充的信息】{clarified}")
     parts.append(
         "请决定：调用一个工具；或在信息不足时输出 "
-        '{"needs_clarify": true, "question": "向用户追问的问题"}；'
+        '{"needs_clarify": true, "question": "向用户追问的问题", '
+        '"options": ["可选的候选回答（仅在能给出明确候选时提供，否则省略）"]}；'
         '若本步无需工具即可回复，输出 {"direct_reply": "回复内容"}。'
     )
     return "\n\n".join(parts)
