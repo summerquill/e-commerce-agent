@@ -15,6 +15,9 @@ INTENT_LABELS = {
     IntentType.OTHER: "其他",
 }
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def main():
     if settings.plan_execute_enabled:
@@ -30,7 +33,7 @@ def main():
         mode = "ReAct + MCP + RAG"
 
     print("=" * 50)
-    print(f"  并夕夕 · 智能客服「小夕」({mode})")
+    print(f"  智能客服「小佳」({mode})")
     print("  支持工具调用 + 政策检索 + 用户记忆 + 技能编排")
     print("  输入 quit/exit 退出, reset 重置, memory 查看记忆, skills 查看技能")
     print("=" * 50)
