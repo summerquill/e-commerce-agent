@@ -147,8 +147,16 @@ def invoke_to_end(graph, state, resumes=None, seen_interrupts=None):
 
 
 def plan_one_step(desc, tool_hint=None):
+    return plan_steps([(desc, tool_hint)])
+
+
+def plan_steps(steps):
+    """steps: [(description, tool_hint), ...]"""
     return json.dumps(
-        {"steps": [{"id": "step_1", "description": desc, "tool_hint": tool_hint}]},
+        {"steps": [
+            {"id": f"step_{i + 1}", "description": desc, "tool_hint": hint}
+            for i, (desc, hint) in enumerate(steps)
+        ]},
         ensure_ascii=False,
     )
 
@@ -164,7 +172,7 @@ def message_contents(messages) -> list[str]:
 # ──────────────────── 测试用例 ────────────────────
 
 class PlanExecuteGraphFlowTest(unittest.TestCase):
-    """覆盖 10 类控制流路径。"""
+    """覆盖 12 类控制流路径。"""
 
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
@@ -424,6 +432,91 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
             [("apply_refund",
               {"order_id": "ORD-20240115-001", "reason": "尺码不合适"})],
         )
+
+    def test_clarify_mid_plan_then_resume_original_plan(self):
+        """L（场景1）: 多步计划中间追问，回答后恢复原计划并推进到底。"""
+        client = ScriptedClient(
+            planner=[plan_steps([
+                ("列出用户全部订单供用户选择", "list_user_orders"),
+                ("为用户选定的订单发起退款", "apply_refund"),
+            ])],
+            executor=[
+                {"__toolcall__": "list_user_orders", "args": {}},
+                '{"needs_clarify": true, "question": "请问要为哪个订单退款？", '
+                '"options": ["Nike Air Max 270 运动鞋", "AirPods Pro 2"]}',
+                {"__toolcall__": "apply_refund",
+                 "args": {"order_id": "ORD-20240115-001", "reason": "尺码不合适"}},
+            ],
+            generate=["退款已发起"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("我要退款"),
+            resumes={"clarify": deque([{"text": "Nike Air Max 270 运动鞋，尺码不合适"}])},
+        )
+
+        # 追问发生在 step_2，回答后 step_2 重试成功，计划推进完成
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["success", "needs_clarify", "success"],
+        )
+        self.assertEqual(values["current_step_idx"], 2)
+        self.assertEqual(
+            client.executed_tools,
+            [("list_user_orders", {}),
+             ("apply_refund",
+              {"order_id": "ORD-20240115-001", "reason": "尺码不合适"})],
+        )
+        self.assertTrue(values["final_response"])
+
+    def test_goal_change_during_clarify_triggers_replan(self):
+        """K（场景3）: 追问过程中用户改变目标 → executor 判 needs_replan →
+        review 快路径 replan → planner v2 围绕新目标重规划并执行成功。"""
+        client = ScriptedClient(
+            planner=[
+                plan_steps([
+                    ("列出用户全部订单供用户选择", "list_user_orders"),
+                    ("为用户选定的订单发起退款", "apply_refund"),
+                ]),
+                plan_one_step("查询小米14 Ultra 订单的物流进度", "query_logistics"),
+            ],
+            executor=[
+                {"__toolcall__": "list_user_orders", "args": {}},
+                '{"needs_clarify": true, "question": "请问要为哪个订单退款？", '
+                '"options": ["Nike Air Max 270 运动鞋", "小米14 Ultra 手机"]}',
+                '{"needs_replan": true, "reason": "用户不想退款了，改为查询物流"}',
+                {"__toolcall__": "query_logistics",
+                 "args": {"order_id": "ORD-20240115-001"}},
+            ],
+            generate=["小米手机正在派送中"],
+        )
+        values = invoke_to_end(
+            build_graph(client),
+            initial_state("我要退款"),
+            resumes={"clarify": deque([
+                {"text": "不退了，帮我查一下小米14 Ultra的物流"},
+            ])},
+        )
+
+        # 旧计划：success → needs_clarify → needs_replan；新计划：success
+        self.assertEqual(
+            [r["status"] for r in values["step_results"]],
+            ["success", "needs_clarify", "needs_replan", "success"],
+        )
+        self.assertEqual(values["plan_iteration"], 2)
+        # 计划已围绕新目标整体替换
+        self.assertEqual(len(values["plan"]), 1)
+        self.assertIn("物流", values["plan"][0]["description"])
+        # 退款工具从未执行；新目标工具按用户新意图执行
+        self.assertEqual(
+            client.executed_tools,
+            [("list_user_orders", {}),
+             ("query_logistics", {"order_id": "ORD-20240115-001"})],
+        )
+        self.assertIsNone(values["pending_clarification"])
+        # 用户改变目标的回答保留在对话记录中（replan 时 planner 可见）
+        self.assertIn("不退了", " ".join(message_contents(values["messages"])))
+        self.assertTrue(values["final_response"])
 
 
 if __name__ == "__main__":
