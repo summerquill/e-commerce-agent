@@ -24,7 +24,8 @@
 ```mermaid
 flowchart TD
     START([START]) --> planner
-    planner -->|v1 初规划 / vN 重规划| executor
+    planner -->|plan 非空<br>v1 初规划 / vN 重规划| executor
+    planner -->|plan 为空<br>闲聊/无需工具 → direct_reply| generate
     executor -->|每跑完一个 step 交棒| review
     review -->|last = needs_clarify| clarify
     clarify -->|interrupt 等回答<br>问答写入 messages| executor
@@ -35,6 +36,7 @@ flowchart TD
 ```
 
 - `planner → executor ⇄ review → generate`：主链
+- `planner → generate`：**闲聊短路**（plan 为空），跳过 executor/review，全链仅 1 次 LLM
 - `clarify`：由 review 路由触发的独立节点（纯 HITL 中继，不调 LLM）
 - `confirm`：executor 内部的 interrupt（不是独立节点）
 - `review` 是路由中枢，4 条出口：`done / continue / clarify / replan`
@@ -170,6 +172,16 @@ review 不是每次都调 LLM（决策顺序见 §2 路由决策图）：
 - **路线 2（v2）**：同 thread_id 跨轮 + 自定义 reducer 检测换轮重置 step_results（解决 `operator.add` 跨轮累积污染问题）。
 
 **Trade-off**：路线 1 简单但 graph 与 memory 两套状态；路线 2 更 LangGraph-native 但需自定义 reducer。
+
+### 3.9 planner 闲聊短路（意图识别 piggyback）
+
+- **问题**：闲聊/打招呼按旧契约被降级成"直接回复用户"步骤，白跑 executor + review，一次问候花 3 次 LLM 调用。
+- **方案**：planner 输出契约二选一——需要工具 → `{"steps": [...]}`；闲聊或无需工具 → `{"action": "direct_reply", "reply": "..."}`。后者 plan 为空，图条件边 `planner → generate` 直连，generate 见 `final_response` 已有值则**透传不再调 LLM**。
+- **不新建独立意图分类节点**：planner 本就调了一次 LLM，意图判断 piggyback 上去零额外成本（新建节点反而多一次调用）。
+- **职责不重叠**：planner 判"要不要计划"，executor 判"这一步要不要工具"——粒度不同。
+- **兜底不变**：planner LLM 失败/输出垃圾 → `normalize_steps` 仍造单步计划交 executor，保证图走得通。
+
+📌 **面试讲点**：节省调用要挑"已经付过费的那次 LLM 调用"来做判断——意图识别挂在 planner 上，比新增分类节点更省。
 
 ---
 

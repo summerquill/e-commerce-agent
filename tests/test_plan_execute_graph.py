@@ -172,7 +172,7 @@ def message_contents(messages) -> list[str]:
 # ──────────────────── 测试用例 ────────────────────
 
 class PlanExecuteGraphFlowTest(unittest.TestCase):
-    """覆盖 12 类控制流路径。"""
+    """覆盖 13 类控制流路径。"""
 
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
@@ -517,6 +517,29 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
         # 用户改变目标的回答保留在对话记录中（replan 时 planner 可见）
         self.assertIn("不退了", " ".join(message_contents(values["messages"])))
         self.assertTrue(values["final_response"])
+
+    def test_planner_short_circuit_chitchat(self):
+        """M: 闲聊 → planner 输出 direct_reply → 直转 generate，跳过 executor/review。
+
+        回归：旧契约把闲聊降级成"直接回复用户"步骤，白跑 executor+review；
+        新契约 planner 输出 {action: direct_reply} 时 plan 为空，条件边直连
+        generate，且 generate 检测到已有 final_response 后透传不再调 LLM。
+        """
+        client = ScriptedClient(
+            planner=['{"action": "direct_reply", "reply": "你好呀，我是小夕～"}'],
+            executor=[],   # 不应被消费（空队列被读会 IndexError）
+            review=[],     # 不应被消费
+            generate=[],   # 不应被消费（透传，不调 LLM）
+        )
+        values = invoke_to_end(build_graph(client), initial_state("你好"))
+
+        self.assertEqual(values["plan"], [])
+        self.assertEqual(values["step_results"], [])
+        self.assertEqual(values["final_response"], "你好呀，我是小夕～")
+        self.assertEqual(client.executed_tools, [])
+        self.assertIn("你好呀", " ".join(message_contents(values["messages"])))
+        # 全链路只发生 planner 一次 LLM 调用
+        self.assertEqual(len(client.captured_request_messages), 1)
 
 
 if __name__ == "__main__":

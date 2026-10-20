@@ -23,7 +23,7 @@ python -m unittest tests.test_plan_execute_graph -v
 
 **何时跑**：改图结构、节点逻辑、prompt 输出契约后先跑它回归（秒级、不需要 API key，可直接挂 CI）。
 
-### 覆盖矩阵（8 用例）
+### 覆盖矩阵（13 用例）
 
 | 用例 | 场景 | 回归点 |
 |------|------|--------|
@@ -32,9 +32,14 @@ python -m unittest tests.test_plan_execute_graph -v
 | C | 最后一步 failed → review 判 replan → 新计划执行成功 | failed 也推进 idx，「全部完成」判断不得吃掉 failed 的 replan 机会 |
 | D | 高风险工具审批被拒 | 结果 skipped，工具**绝不执行** |
 | E | 审批通过 | interrupt resume 重放下工具只执行一次（动作解析幂等回归） |
-| F | 闲聊 direct_reply | 不调任何工具，`tool=None` |
+| F | 单步 direct_reply（executor 分支） | 不调任何工具，`tool=None` |
 | G | planner 返回非法 JSON | 兜底单步直接回复计划，图仍走通 |
 | H | needs_clarify **带 options** | interrupt payload 含 `question` + `options`，回答后重试成功（结构化追问链路） |
+| I | 发给 SDK 的消息格式 | 报文契约：`add_messages` 后透传前须转回 `{role, content}`（否则真 API 422） |
+| J | 同一步**两轮追问** | 第一轮答案不被第二轮覆盖（问答累积进对话记录） |
+| K（场景3） | 追问中用户改变目标 | executor 判 `needs_replan` → review 快路径 replan，旧计划整体替换，退款工具**从未执行** |
+| L（场景1） | 多步计划**中间追问** | 回答后恢复原计划并推进到底 |
+| M | **闲聊短路** | planner 输出 `direct_reply` → plan 为空直转 generate，executor/review 零消费，全链仅 **1 次 LLM** |
 
 ***
 

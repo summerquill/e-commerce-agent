@@ -104,3 +104,19 @@
 - 最终回复是物流信息而非退款结果
 - 若继续闲聊「那还是算了吧」，agent 如实兜底而非强行执行旧计划
 
+## 场景 4：闲聊短路（成本回归）
+
+**验证路径**：planner 判无需计划 → 输出 `{"action": "direct_reply", ...}` → plan 为空 → 条件边直转 generate → generate 透传不调 LLM。
+**修复背景**：旧契约把闲聊降级成"直接回复用户"步骤，白跑 executor + review（3 次 LLM）。
+
+| 步 | 操作 | 预期观察 |
+|----|------|---------|
+| 1 | 输入 `你好` | 只有 `🧭 [planner v1] 无需规划 → 直接回复`；**不出现** `🔧 [执行]`、也不出现 review 的 `🔎` 行 |
+| 2 | 输入 `你能做什么` | 同上；回复直接可读，不啰嗦 |
+
+**通过标准**：
+- 无任何工具调用、无 step 执行日志
+- 观察到 generate 未产生额外 LLM 调用（全链仅 planner 1 次；若接了 LangSmith，trace 中该轮只有 planner + generate 两个节点、一次 LLM run）
+- 对照：输入 `帮我查一下最近的订单` 仍应走完整链路（planner → executor → review → generate）
+- 离线对照用例 M
+
