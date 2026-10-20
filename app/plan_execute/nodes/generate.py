@@ -12,6 +12,14 @@ from app.plan_execute.state import AgentState
 
 
 def generate_node(state: AgentState, deps: NodeDeps) -> str:
+    existing = (state.get("final_response") or "").strip()
+    if existing:
+        # planner 已直接给出回复（闲聊短路路径）：透传，不再调 LLM
+        return {
+            "final_response": existing,
+            "messages": [{"role": "assistant", "content": existing}],
+        }
+
     user_content = _build_user_content(state)
 
     try:

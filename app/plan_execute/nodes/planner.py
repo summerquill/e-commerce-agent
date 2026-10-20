@@ -55,8 +55,20 @@ def planner_node(state: AgentState, deps: NodeDeps) -> dict:
         print(f"⚠️  [planner] LLM 调用失败，使用兜底单步计划: {e}")
         raw = None
 
-    steps = normalize_steps(raw, state["user_query"])
     iteration = state.get("plan_iteration", 0) + 1
+
+    # 短路：闲聊/无需工具时 plan 为空，图条件边直转 generate（不写 messages，交 generate）
+    reply = _direct_reply_of(raw)
+    if reply is not None:
+        print(f"🧭 [planner v{iteration}] 无需规划 → 直接回复")
+        return {
+            "plan": [],
+            "plan_iteration": iteration,
+            "current_step_idx": 0,
+            "final_response": reply,  # generate 见已有值则透传，不再调 LLM
+        }
+
+    steps = normalize_steps(raw, state["user_query"])
     print(f"🧭 [planner v{iteration}] 生成 {len(steps)} 个步骤"
           f"{'（重规划）' if is_replan else ''}")
 
@@ -69,6 +81,14 @@ def planner_node(state: AgentState, deps: NodeDeps) -> dict:
             "content": f"[planner v{iteration}] 已生成 {len(steps)} 个步骤的计划",
         }],
     }
+
+
+def _direct_reply_of(raw) -> "str | None":
+    """planner 输出契约的 direct_reply 分支；非该形态返回 None（交 normalize_steps 拆步）。"""
+    if not isinstance(raw, dict) or raw.get("action") != "direct_reply":
+        return None
+    reply = str(raw.get("reply") or "").strip()
+    return reply or None
 
 
 def _format_plan(plan) -> str:

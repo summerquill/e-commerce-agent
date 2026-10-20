@@ -2,6 +2,7 @@
 
 节点实现已拆分到 app/plan_execute/nodes/（纯函数 + NodeDeps 注入）：
 - planner → executor ⇄ review → generate；clarify 由 review 路由触发
+- planner 可短路：闲聊/无需工具时 plan 为空，planner 直接 → generate
 - confirm 是 executor 内部 interrupt（高风险操作审批）
 - clarify 是独立节点（缺信息追问），interrupt 后回 executor 重试同 step
 - review 是路由中枢，4 出口：done/continue/clarify/replan
@@ -60,11 +61,15 @@ class PlanExecuteGraph:
         g.add_node("generate", partial(generate_node, deps=self.deps))
 
         g.add_edge(START, "planner")
-        g.add_edge("planner", "executor")
         g.add_edge("executor", "review")
         g.add_edge("clarify", "executor")  # 回 executor 重试同 step
         g.add_edge("generate", END)
 
+        # planner 短路：闲聊/无需工具时 plan 为空 → 直接进 generate（省去 executor/review）
+        g.add_conditional_edges("planner", self._route_after_planner, {
+            "execute": "executor",
+            "direct_reply": "generate",
+        })
         g.add_conditional_edges("review", self._route, {
             "continue": "executor",
             "clarify": "clarify",
@@ -73,6 +78,10 @@ class PlanExecuteGraph:
         })
 
         return g.compile(checkpointer=build_checkpointer())
+
+    @staticmethod
+    def _route_after_planner(state: AgentState) -> str:
+        return "execute" if state.get("plan") else "direct_reply"
 
     @staticmethod
     def _route(state: AgentState) -> str:
