@@ -39,10 +39,12 @@ def planner_node(state: AgentState, deps: NodeDeps) -> dict:
         messages.append({
             "role": "user",
             "content": (
-                "上一版计划执行失败，需要重新规划。\n"
+                "上一版计划无法继续执行（步骤失败，或用户在中途改变了目标），"
+                "需要重新规划。\n"
                 f"【上一版计划】\n{_format_plan(state.get('plan', []))}\n\n"
                 f"【已执行结果】\n{_format_results(state.get('step_results', []))}\n\n"
-                "请基于失败原因调整计划（换步骤或换方式），重新输出完整 JSON。"
+                "请结合上方对话记录中用户的最新意图调整计划（换步骤、换方式，"
+                "或围绕新目标重新拆解），重新输出完整 JSON。"
             ),
         })
 

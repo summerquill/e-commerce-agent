@@ -1,7 +1,7 @@
 """review 节点：路由中枢，4 出口 done/continue/clarify/replan。
 
 双路径（设计决策）：
-- 快路径（规则，不调 LLM）：needs_clarify / 全部完成 / 超 plan_iterations 上限
+- 快路径（规则，不调 LLM）：needs_clarify / needs_replan / 全部完成 / 超 plan_iterations 上限
 - 慢路径（LLM）：上一步 failed → 判断该重规划还是兜底回复
 """
 
@@ -25,9 +25,13 @@ def review_node(state: AgentState, deps: NodeDeps) -> dict:
     # 快路径：确定性信号
     if last and last["status"] == "needs_clarify":
         return {"review_decision": "clarify"}
-    # 迭代上限兜底优先：防止 failed→replan 死循环
+    # 迭代上限兜底优先：防止 failed→replan / needs_replan→replan 死循环
     if state.get("plan_iteration", 0) >= settings.max_plan_iterations:
         return {"review_decision": "done"}
+    # executor 判定用户目标已变 → 确定性 replan（判断归属 executor，路由归 review）
+    if last and last["status"] == "needs_replan":
+        print(f"🔎 [review] 目标已变 → replan（{last.get('error') or ''}）")
+        return {"review_decision": "replan"}
     # 慢路径：失败的最后一步仍可能通过 replan 恢复，故须在"全部完成"判断之前
     if last and last["status"] == "failed":
         return {"review_decision": _judge_failure(state, deps)}

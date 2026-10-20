@@ -78,6 +78,17 @@ def executor_node(state: AgentState, deps: NodeDeps, config: RunnableConfig) -> 
             "current_step_idx": idx + 1,
         }
 
+    if kind == "replan":
+        # 用户最新回答使当前计划失效（判断同 needs_clarify 一样留在 executor，
+        # 路由仍归 review）；idx 不前进，replan 后 planner 重置为 0
+        print(f"🔎 [executor] 目标已变 → 请求重规划（{action[1]}）")
+        return {
+            "step_results": [StepResult(
+                step_id=step["id"], tool=None, input={},
+                output=None, status="needs_replan", error=action[1],
+            )],
+        }
+
     # kind == "error"
     return _fail_step(step, idx, action[1])
 
@@ -115,7 +126,7 @@ def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
             return ("error", f"工具参数解析失败: {tc.function.arguments}")
         return ("tool", tc.function.name, args)
 
-    # 路径二：无工具调用 → needs_clarify / direct_reply
+    # 路径二：无工具调用 → needs_clarify / needs_replan / direct_reply
     payload = parse_lenient_json(message.content or "") or {}
     if payload.get("needs_clarify"):
         question = str(payload.get("question") or message.content or "请补充更多信息").strip()
@@ -125,6 +136,10 @@ def _resolve_action(deps: NodeDeps, step: Step, state: AgentState) -> tuple:
             if isinstance(raw_options, list) else []
         )
         return ("clarify", question, options)
+
+    if payload.get("needs_replan"):
+        reason = str(payload.get("reason") or "用户改变了目标").strip()
+        return ("replan", reason)
 
     reply = str(payload.get("direct_reply") or message.content or "").strip()
     return ("reply", reply)
@@ -181,6 +196,8 @@ def _build_user_content(step: Step, state: AgentState) -> str:
         "请决定：调用一个工具；或在信息不足时输出 "
         '{"needs_clarify": true, "question": "向用户追问的问题", '
         '"options": ["可选的候选回答（仅在能给出明确候选时提供，否则省略）"]}；'
+        '若用户最新回答改变了目标、当前计划已失去意义，输出 '
+        '{"needs_replan": true, "reason": "用户的新目标"}；'
         '若本步无需工具即可回复，输出 {"direct_reply": "回复内容"}。'
     )
     return "\n\n".join(parts)
