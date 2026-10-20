@@ -21,44 +21,66 @@
 
 5 个节点 + 条件边：
 
-```
-                         START
-                           │
-                           ▼
-                    ┌─────────────┐
-            ┌──────│   planner    │◄──────┐  replan (动态重规划)
-            │      └─────────────┘       │
-            │            │               │
-            │            ▼               │
-            │      ┌──────────────┐      │
-            │      │   executor   │◄─┐   │
-            │      └──────────────┘  │   │
-            │        │  ▲             │   │
-            │  confirm│  │clarify答   │   │
-            │ (内部   │  │     ┌──────┴───┴─┐
-            │ interrupt)│  │     │  review   │  ← 路由中枢
-            │        │  │  └────►│ (hybrid)  │
-            │        ▼  │        └──┬───┬──┬┘
-            │     [执行]│           │   │  │
-            │           └───────────┘   │  │
-            │              (executor⇄review)
-            │                              │
-            │              ┌───────────────┘
-            │              ▼  clarify 触发
-            │      ┌──────────────┐
-            │      │   clarify    │  (interrupt)
-            │      └──────────────┘
-            │              │ 回 executor 重试同 step
-            ▼
-      ┌──────────────┐
-      │   generate    │────► END
-      └──────────────┘
+```mermaid
+flowchart TD
+    START([START]) --> planner
+    planner -->|v1 初规划 / vN 重规划| executor
+    executor -->|每跑完一个 step 交棒| review
+    review -->|last = needs_clarify| clarify
+    clarify -->|interrupt 等回答<br>问答写入 messages| executor
+    review -->|last = needs_replan<br>或 failed → LLM 判 replan| planner
+    review -->|continue| executor
+    review -->|done：全部完成 / 超迭代上限<br>/ failed → LLM 判 done| generate
+    generate --> END([END])
 ```
 
 - `planner → executor ⇄ review → generate`：主链
-- `clarify`：由 review 路由触发的独立节点
+- `clarify`：由 review 路由触发的独立节点（纯 HITL 中继，不调 LLM）
 - `confirm`：executor 内部的 interrupt（不是独立节点）
 - `review` 是路由中枢，4 条出口：`done / continue / clarify / replan`
+
+### executor 单步内部流程（动作四选一）
+
+```mermaid
+flowchart TD
+    A[取 plan 中 current_step_idx] --> B[LLM 解析动作<br>上下文 = system 契约 + messages 对话记录 + 当前步任务卡]
+    B --> C{输出四选一}
+    C -->|tool_call| D{高风险工具？}
+    D -->|是| E[confirm interrupt 等审批]
+    E -->|拒绝| F1[step_result: skipped<br>idx+1]
+    E -->|通过| F2[执行工具]
+    D -->|否| F2
+    F2 --> G[step_result: success / failed<br>idx+1]
+    C -->|needs_clarify<br>缺信息| H[写 pending_clarification<br>step_result: needs_clarify<br>idx 不动]
+    C -->|needs_replan<br>用户目标已变| I[step_result: needs_replan<br>idx 不动]
+    C -->|direct_reply<br>无需工具| J[step_result: success<br>idx+1]
+    F1 & G & H & I & J --> K[交棒 review]
+```
+
+- 追问/重规划的**判断都在 executor**（解析动作时最知情），路由都归 review
+- clarify 回答后回到**同一个 step** 重试；答案从 messages 对话记录中解析，多轮追问不丢前序信息
+
+### review 路由决策（按优先级，快路径不调 LLM）
+
+```mermaid
+flowchart TD
+    A[取最后一条 step_result] --> B{needs_clarify?}
+    B -->|是| C1[→ clarify 节点]
+    B -->|否| C{plan_iteration ≥ 上限？}
+    C -->|是| D1[→ generate 兜底<br>防 replan 死循环]
+    C -->|否| D{needs_replan?}
+    D -->|是| D2[→ planner 重规划]
+    D -->|否| E{failed?}
+    E -->|是| F[慢路径：LLM 判断<br>可恢复 → replan<br>不可恢复 → done]
+    F -->|replan| D2
+    F -->|done| D1
+    E -->|否| G{idx ≥ len plan？}
+    G -->|是| D1
+    G -->|否| H[→ executor 下一步 continue]
+```
+
+- 顺序要点：迭代上限在 needs_replan / failed 之前（两种 replan 共享防死循环兜底）；
+  failed 判断在"全部完成"之前（失败的最后一步仍有 replan 机会）
 
 ---
 
@@ -127,8 +149,8 @@ executor 执行时，LLM 按「system 契约 → messages 对话记录 → 当�
 
 ### 3.6 Review Hybrid 路由
 
-review 不是每次都调 LLM：
-- **快路径（规则，不调 LLM）**：`needs_clarify` / 全部步骤完成 / 超 plan_iterations 上限
+review 不是每次都调 LLM（决策顺序见 §2 路由决策图）：
+- **快路径（规则，不调 LLM）**：`needs_clarify → clarify` / `needs_replan → replan`（executor 判定用户目标已变）/ 全部步骤完成 / 超 plan_iterations 上限
 - **慢路径（调 LLM）**：仅 `failed → 是否 replan` 这种模糊判断
 
 3 步计划多数情况只触发 1 次 review-LLM 调用，成本可控。
