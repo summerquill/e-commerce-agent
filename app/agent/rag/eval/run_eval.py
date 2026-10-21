@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evals.rag_adapter import retrieve, generate
+from .rag_adapter import retrieve, generate
 
 
 def _chunk_id(item: Any) -> str:
