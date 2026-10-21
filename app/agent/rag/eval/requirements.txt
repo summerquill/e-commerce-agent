@@ -1,0 +1,4 @@
+# Suggested compatible baseline for the legacy evaluate() API used in run_eval.py
+ragas==0.2.15
+datasets>=2.19,<4
+pandas>=2.2

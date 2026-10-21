@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": "q_001",
+      "type": "direct",
+      "query": "消费满多少钱可以升级成黄金会员？",
+      "expected_chunk_ids": [
+        "会员权益#01-00"
+      ],
+      "reference": "近12个月累计实付金额达到5000元可升级为黄金会员，会员等级每月1号自动结算。",
+      "grading_notes": [
+        "答出5000元升级门槛",
+        "提到近12个月累计实付金额"
+      ],
+      "answerable": true,
+      "difficulty": "easy"
+    }
+  ]
+}
