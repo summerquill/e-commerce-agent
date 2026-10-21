@@ -1,20 +1,29 @@
-"""按 Markdown 二级标题切分知识库文档。
+"""按 Markdown 标题层级切分知识库文档。
 
 切分策略：
-- 以 `## ` 二级标题为切分边界，每个二级章节作为一个 chunk。
-- 二级章节内的三级/四级小节保留在同一 chunk 中（保持语义完整）。
+- 以 `## ` 二级标题为一级切分边界，每个二级章节作为一个 chunk 分组。
+- 二级章节内若存在 `### ` 三级标题，则按三级标题继续切分，
+  避免“一个 chunk 装多个子主题”导致向量语义被稀释（如会员权益四个等级、
+  FAQ 多个问题、特殊场景多个分支混在同一块里）。
+- 三级标题之前的章节导语（若有）单独成块，与三级小节并列编号。
 - 文档开头到第一个二级标题之间的内容（含一级标题和导语）作为 "概览" chunk。
-- chunk 长度超过 ~1200 字时按段落进一步切分，避免单个 chunk 过长。
+- 单个 chunk 超过 ~1200 字时按段落进一步切分，避免 chunk 过长。
+
+chunk_id 规则（与旧版保持兼容）：
+- 常规：`{doc}#{h2_idx:02d}-{h3_idx:02d}`
+  - 只有二级标题时 h3_idx 固定为 00
+  - 有三级标题时按 00、01... 编号
+- 超长段落再切分时追加一段：`{doc}#{h2_idx:02d}-{h3_idx:02d}-{part:02d}`
 
 每个 chunk 保留：
 - doc：文档名（不含扩展名），如 "退换货政策"
-- section：章节标题，如 "二、质量问题退换货"
-- text：chunk 全文（含小节结构）
-- chunk_id：稳定的字符串 id，便于增量更新
+- section：章节标题（有三级标题时为 "二级 · 三级"），如 "四、特殊场景 · 4.2 拒收退款"
+- text：chunk 全文（含标题前缀）
+- chunk_id：稳定的字符串 id，便于增量更新与评测对齐
 """
 
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 MAX_CHUNK_CHARS = 1200
@@ -42,49 +51,78 @@ def chunk_markdown_dir(kb_dir: Path) -> list[Chunk]:
 def _chunk_one_file(md_path: Path) -> list[Chunk]:
     raw = md_path.read_text(encoding="utf-8")
     doc_name = md_path.stem
-    sections = _split_by_h2(raw)
 
     out: list[Chunk] = []
-    for idx, (section_title, section_body) in enumerate(sections):
-        text = section_body.strip()
+    for h2_idx, h3_idx, section, body in _split_by_headings(raw):
+        text = body.strip()
         if not text:
             continue
 
         if len(text) <= MAX_CHUNK_CHARS:
-            out.append(_make_chunk(doc_name, section_title, text, idx, 0))
+            out.append(_make_chunk(doc_name, section, text, h2_idx, h3_idx))
             continue
 
-        for sub_idx, piece in enumerate(_split_long(text)):
-            out.append(_make_chunk(doc_name, section_title, piece, idx, sub_idx))
+        for part_idx, piece in enumerate(_split_long(text)):
+            out.append(
+                _make_chunk(doc_name, section, piece, h2_idx, h3_idx, part_idx)
+            )
     return out
 
 
-def _split_by_h2(raw: str) -> list[tuple[str, str]]:
-    """返回 [(section_title, section_body), ...]。
+def _split_by_headings(raw: str) -> list[tuple[int, int, str, str]]:
+    """按 H2/H3 切分，返回 [(h2_idx, h3_idx, section, body), ...]。
 
-    第一个 section 是文档头部（H1 + 导语），title 取 H1 文本。
+    h2_idx 从 0 开始；若文档含 H1，则 0 号预留给“概览”块，
+    以保持既有 chunk_id（如 `会员权益#01-00`）稳定。
     """
     lines = raw.splitlines()
-    sections: list[tuple[str, list[str]]] = []
-    current_title = ""
-    current_body: list[str] = []
+    blocks: list[tuple[int, int, str, str]] = []
+
+    h1_title = ""
+    h2_title = ""
+    h3_title = ""
+    h2_idx = -1
+    h3_idx = 0
+    buf: list[str] = []
+
+    def flush() -> None:
+        nonlocal h3_idx
+        text = "\n".join(buf).strip()
+        if not text:
+            return
+
+        if not h2_title:
+            section = f"{h1_title} · 概览" if h1_title else "概览"
+            blocks.append((0, 0, section, text))
+            return
+
+        section = f"{h2_title} · {h3_title}" if h3_title else h2_title
+        blocks.append((h2_idx, h3_idx, section, text))
+        h3_idx += 1
 
     for line in lines:
-        if line.startswith("# ") and not current_body and not sections:
-            current_title = line[2:].strip() + " · 概览"
+        if line.startswith("# "):
+            h1_title = line[2:].strip()
+            if h2_idx < 0:
+                h2_idx = 0  # 给概览块预留 0 号
             continue
         if line.startswith("## "):
-            if current_body:
-                sections.append((current_title or "概览", current_body))
-            current_title = line[3:].strip()
-            current_body = []
+            flush()
+            buf.clear()
+            h2_title = line[3:].strip()
+            h3_title = ""
+            h3_idx = 0
+            h2_idx = h2_idx + 1 if h2_idx >= 0 else 0
             continue
-        current_body.append(line)
+        if line.startswith("### "):
+            flush()
+            buf.clear()
+            h3_title = line[4:].strip()
+            continue
+        buf.append(line)
 
-    if current_body:
-        sections.append((current_title or "概览", current_body))
-
-    return [(t, "\n".join(b).strip()) for t, b in sections]
+    flush()
+    return blocks
 
 
 def _split_long(text: str) -> list[str]:
@@ -109,7 +147,16 @@ def _split_long(text: str) -> list[str]:
     return pieces
 
 
-def _make_chunk(doc: str, section: str, text: str, idx: int, sub_idx: int) -> Chunk:
-    chunk_id = f"{doc}#{idx:02d}-{sub_idx:02d}"
+def _make_chunk(
+    doc: str,
+    section: str,
+    text: str,
+    h2_idx: int,
+    h3_idx: int,
+    part_idx: int | None = None,
+) -> Chunk:
+    chunk_id = f"{doc}#{h2_idx:02d}-{h3_idx:02d}"
+    if part_idx is not None:
+        chunk_id += f"-{part_idx:02d}"
     body = f"【{doc} · {section}】\n{text}"
     return Chunk(chunk_id=chunk_id, doc=doc, section=section, text=body)
