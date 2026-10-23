@@ -125,7 +125,13 @@ def load_dataset(path: Path) -> list[dict[str, Any]]:
     return cases
 
 
-def run_eval(dataset_path: Path, output_dir: Path, top_k: int, with_ragas: bool) -> None:
+def run_eval(
+    dataset_path: Path,
+    output_dir: Path,
+    top_k: int,
+    with_ragas: bool,
+    no_judge: bool = False,
+) -> None:
     cases = load_dataset(dataset_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -144,12 +150,15 @@ def run_eval(dataset_path: Path, output_dir: Path, top_k: int, with_ragas: bool)
         actual_ids = [_chunk_id(item) for item in retrieved]
         contexts = [_chunk_text(item) for item in retrieved]
 
-        started = time.perf_counter()
-        answer = generate(query, contexts)
-        generation_latency_ms = (time.perf_counter() - started) * 1000
+        answer: str | None = None
+        generation_latency_ms: float | None = None
+        if not no_judge:
+            started = time.perf_counter()
+            answer = generate(query, contexts)
+            generation_latency_ms = (time.perf_counter() - started) * 1000
 
         metrics = retrieval_metrics(expected_ids, actual_ids, top_k)
-        trace = {
+        trace: dict[str, Any] = {
             "id": case_id,
             "type": case.get("type"),
             "difficulty": case.get("difficulty"),
@@ -163,11 +172,17 @@ def run_eval(dataset_path: Path, output_dir: Path, top_k: int, with_ragas: bool)
             "grading_notes": case.get("grading_notes", []),
             "response": answer,
             "retrieval_latency_ms": round(retrieval_latency_ms, 2),
-            "generation_latency_ms": round(generation_latency_ms, 2),
         }
+        if not no_judge and generation_latency_ms is not None:
+            trace["generation_latency_ms"] = round(generation_latency_ms, 2)
         traces.append(trace)
 
-        if case.get("answerable", True) and case.get("reference"):
+        if (
+            not no_judge
+            and answer is not None
+            and case.get("answerable", True)
+            and case.get("reference")
+        ):
             ragas_rows.append({
                 "question": query,
                 "answer": answer,
@@ -175,10 +190,14 @@ def run_eval(dataset_path: Path, output_dir: Path, top_k: int, with_ragas: bool)
                 "ground_truth": case["reference"],
             })
 
+        gen_label = (
+            f"generate={generation_latency_ms:.0f}ms"
+            if generation_latency_ms is not None
+            else "generate=SKIP"
+        )
         print(
             f"[{case_id}] retrieve={retrieval_latency_ms:.0f}ms "
-            f"generate={generation_latency_ms:.0f}ms "
-            f"retrieved={actual_ids}"
+            f"{gen_label} retrieved={actual_ids}"
         )
 
     trace_path = output_dir / "traces.json"
@@ -190,22 +209,31 @@ def run_eval(dataset_path: Path, output_dir: Path, top_k: int, with_ragas: bool)
         "case_count": len(cases),
         "answerable_case_count": sum(bool(c.get("answerable", True)) for c in cases),
         "top_k": top_k,
+        "no_judge": no_judge,
         "retrieval_metrics": {
             name: safe_mean([t["retrieval_metrics"][name] for t in traces])
             for name in metric_names
         },
         "latency_ms": {
             "retrieval_mean": safe_mean([t["retrieval_latency_ms"] for t in traces]),
-            "generation_mean": safe_mean([t["generation_latency_ms"] for t in traces]),
-            "total_mean": safe_mean([
-                t["retrieval_latency_ms"] + t["generation_latency_ms"] for t in traces
-            ]),
+            "generation_mean": (
+                safe_mean([t.get("generation_latency_ms") for t in traces])
+                if not no_judge else None
+            ),
+            "total_mean": (
+                safe_mean([
+                    t["retrieval_latency_ms"] + (t.get("generation_latency_ms") or 0)
+                    for t in traces
+                ])
+                if not no_judge else safe_mean([t["retrieval_latency_ms"] for t in traces])
+            ),
         },
         "notes": [
             "Retrieval metrics exclude cases with empty expected_chunk_ids.",
             "Precision@K uses K as denominator even if fewer than K chunks are returned.",
             "For unanswerable cases, add a separate abstention/unsupported-answer review; empty gold IDs are not scored as perfect retrieval.",
-        ],
+        ]
+        + (["--no-judge 已启用：跳过 generate 调用与生成层评测。"] if no_judge else []),
     }
 
     if with_ragas:
@@ -267,12 +295,23 @@ def main() -> None:
     parser.add_argument("--output-dir", default="evals/results/baseline")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--with-ragas", action="store_true")
+    parser.add_argument(
+        "--no-judge",
+        action="store_true",
+        help="跳过 generate 调用与生成层评测，只跑检索指标（hit/recall/precision/MRR）",
+    )
     args = parser.parse_args()
 
     if args.top_k < 1:
         parser.error("--top-k must be >= 1")
 
-    run_eval(Path(args.dataset), Path(args.output_dir), args.top_k, args.with_ragas)
+    run_eval(
+        Path(args.dataset),
+        Path(args.output_dir),
+        args.top_k,
+        args.with_ragas,
+        args.no_judge,
+    )
 
 
 if __name__ == "__main__":
