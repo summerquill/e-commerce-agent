@@ -42,7 +42,7 @@ def _get_client() -> OpenAI:
     return _client
 
 
-def retrieve(query: str, top_k: int = 5) -> list[dict[str, Any]]:
+def retrieve(query: str, top_k: int = 3) -> list[dict[str, Any]]:
     """复用应用真实的检索链路：settings.rag_backend → KnowledgeRetriever → backend.search。
 
     返回顺序即后端给出的相关性降序；chunk_id 由 chunker 生成，重建索引后保持稳定。
