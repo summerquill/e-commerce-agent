@@ -1,0 +1,2377 @@
+[
+  {
+    "case_id": "q_009",
+    "query": "白银会员要消费多少才能保级？",
+    "gold": [
+      "会员权益#01-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#02-01",
+        "dense_rank": 1,
+        "rerank_score": 0.6752,
+        "rerank_rank": 1,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.3354,
+        "rerank_rank": 2,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 4,
+        "rerank_score": 0.0546,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0498,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#05-02",
+        "dense_rank": 5,
+        "rerank_score": 0.0327,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      }
+    }
+  },
+  {
+    "case_id": "q_010",
+    "query": "能不能找客服给我手动升成黄金会员？",
+    "gold": [
+      "会员权益#05-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#05-00",
+        "dense_rank": 1,
+        "rerank_score": 0.3346,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.0586,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0285,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 5,
+        "rerank_score": 0.0022,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0006,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_011",
+    "query": "我之前买东西花了6000元，后来退了一笔1000元的订单，还能算黄金会员吗？",
+    "gold": [
+      "会员权益#01-00",
+      "会员权益#05-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 4,
+        "rerank_score": 0.5295,
+        "rerank_rank": 1,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#05-01",
+        "dense_rank": 1,
+        "rerank_score": 0.2904,
+        "rerank_rank": 2,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.2548,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0995,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#05-02",
+        "dense_rank": 2,
+        "rerank_score": 0.0527,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 0.5,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 0.5,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      }
+    }
+  },
+  {
+    "case_id": "q_012",
+    "query": "这个平台的会员需要交年费吗？",
+    "gold": [
+      "会员权益#05-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#05-02",
+        "dense_rank": 1,
+        "rerank_score": 0.9627,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.0185,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0141,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0027,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 5,
+        "rerank_score": 0.002,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_013",
+    "query": "攒的积分会不会过期？多久清零？",
+    "gold": [
+      "会员权益#03-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#03-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9558,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#05-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0031,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0001,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-01",
+        "dense_rank": 2,
+        "rerank_score": 0.0001,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0001,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_014",
+    "query": "白银、黄金和钻石会员每个月分别能领哪些优惠券？",
+    "gold": [
+      "会员权益#02-01",
+      "会员权益#02-02",
+      "会员权益#02-03"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#02-01",
+        "dense_rank": 2,
+        "rerank_score": 0.9709,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 5,
+        "rerank_score": 0.8385,
+        "rerank_rank": 2,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.7855,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.6939,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 4,
+        "rerank_score": 0.658,
+        "rerank_rank": 5,
+        "is_gold": true
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.6,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.3333333333333333,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.6,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.6666666666666666,
+        "precision@3": 0.6666666666666666,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.3333333333333333,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_015",
+    "query": "黄金会员和钻石会员都能免邮吗？偏远地区也一样吗？",
+    "gold": [
+      "会员权益#02-02",
+      "会员权益#02-03",
+      "配送说明#03-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.9761,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 1,
+        "rerank_score": 0.9633,
+        "rerank_rank": 2,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 2,
+        "rerank_score": 0.9086,
+        "rerank_rank": 3,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.3717,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.3543,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.6,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.6666666666666666,
+        "precision@3": 0.6666666666666666,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.3333333333333333,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.6,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 1.0,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.3333333333333333,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_016",
+    "query": "注册会员生日有什么优惠？是打折还是发券？",
+    "gold": [
+      "会员权益#02-00",
+      "会员权益#04-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "会员权益#02-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9664,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#04-00",
+        "dense_rank": 2,
+        "rerank_score": 0.7123,
+        "rerank_rank": 2,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#02-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0393,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-02",
+        "dense_rank": 3,
+        "rerank_score": 0.026,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 4,
+        "rerank_score": 0.014,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.4,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.6666666666666666,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.4,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.6666666666666666,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_017",
+    "query": "衣服买回来不想要了，签收后几天内可以无理由退？",
+    "gold": [
+      "退换货政策#01-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.995,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 4,
+        "rerank_score": 0.9272,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-01",
+        "dense_rank": 2,
+        "rerank_score": 0.9237,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 5,
+        "rerank_score": 0.8344,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 3,
+        "rerank_score": 0.7845,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_018",
+    "query": "护肤品拆封试用了，七天内还能无理由退吗？",
+    "gold": [
+      "退换货政策#01-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#01-01",
+        "dense_rank": 2,
+        "rerank_score": 0.9963,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.969,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#02-00",
+        "dense_rank": 4,
+        "rerank_score": 0.1222,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-02",
+        "dense_rank": 5,
+        "rerank_score": 0.0146,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#04-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0037,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_019",
+    "query": "七天无理由退货的运费谁出？",
+    "gold": [
+      "退换货政策#01-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 1,
+        "rerank_score": 0.9975,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.5383,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-01",
+        "dense_rank": 4,
+        "rerank_score": 0.3647,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 3,
+        "rerank_score": 0.0534,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0138,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_020",
+    "query": "收到的商品有破损，签收10天了，退货运费还要我自己承担吗？",
+    "gold": [
+      "退换货政策#02-00",
+      "退换货政策#02-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 2,
+        "rerank_score": 0.9702,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#05-00",
+        "dense_rank": 1,
+        "rerank_score": 0.897,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#05-02",
+        "dense_rank": 3,
+        "rerank_score": 0.8223,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.2897,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0725,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 0.5,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 0.5,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_021",
+    "query": "申请质量问题售后，需要准备什么证据？",
+    "gold": [
+      "退换货政策#02-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#02-02",
+        "dense_rank": 1,
+        "rerank_score": 0.9771,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#02-00",
+        "dense_rank": 2,
+        "rerank_score": 0.0784,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0339,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0175,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0047,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_022",
+    "query": "提交退款申请后，客服一般多久审核？",
+    "gold": [
+      "退换货政策#03-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 2,
+        "rerank_score": 0.9816,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.353,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-01",
+        "dense_rank": 3,
+        "rerank_score": 0.1122,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0646,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 4,
+        "rerank_score": 0.049,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_023",
+    "query": "东西还没发货，我不想要了，可以只退款不退货吗？",
+    "gold": [
+      "退换货政策#04-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#04-00",
+        "dense_rank": 1,
+        "rerank_score": 0.987,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.7532,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 4,
+        "rerank_score": 0.6599,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 3,
+        "rerank_score": 0.619,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.5058,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_024",
+    "query": "快递到了我直接拒收，钱什么时候退回来？",
+    "gold": [
+      "退换货政策#04-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 1,
+        "rerank_score": 0.9858,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#05-00",
+        "dense_rank": 3,
+        "rerank_score": 0.8358,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.5433,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.388,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#06-00",
+        "dense_rank": 2,
+        "rerank_score": 0.1387,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_025",
+    "query": "一笔订单买了三件，只想退其中一件可以吗？",
+    "gold": [
+      "退换货政策#04-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "退换货政策#04-02",
+        "dense_rank": 1,
+        "rerank_score": 0.9918,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.3654,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.2656,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 4,
+        "rerank_score": 0.1284,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0554,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_026",
+    "query": "我在上海买东西，普通快递一般几天到？",
+    "gold": [
+      "配送说明#02-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#02-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9232,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.6602,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 5,
+        "rerank_score": 0.4547,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.1735,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0599,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_027",
+    "query": "县城下面的乡镇寄过来一般要多久？",
+    "gold": [
+      "配送说明#02-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#02-00",
+        "dense_rank": 2,
+        "rerank_score": 0.0904,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#01-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0601,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0226,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.01,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0001,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_028",
+    "query": "我在深圳，所有商品都能当日达吗？",
+    "gold": [
+      "配送说明#02-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#02-00",
+        "dense_rank": 1,
+        "rerank_score": 0.8695,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0526,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.0294,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#03-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0133,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#04-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0046,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_029",
+    "query": "买了80块钱的东西，运费怎么算？",
+    "gold": [
+      "配送说明#03-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#03-00",
+        "dense_rank": 1,
+        "rerank_score": 0.2764,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 2,
+        "rerank_score": 0.2107,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 3,
+        "rerank_score": 0.0426,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#03-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0212,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 5,
+        "rerank_score": 0.0124,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_030",
+    "query": "寄到新疆是不是一定包邮？",
+    "gold": [
+      "配送说明#03-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#03-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9039,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.1065,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#04-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0215,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#02-00",
+        "dense_rank": 3,
+        "rerank_score": 0.0106,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 5,
+        "rerank_score": 0.001,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_031",
+    "query": "物流信息三天没动静了，怎么办？",
+    "gold": [
+      "配送说明#06-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#06-00",
+        "dense_rank": 1,
+        "rerank_score": 0.2543,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "常见问题FAQ#02-01",
+        "dense_rank": 2,
+        "rerank_score": 0.0855,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-02",
+        "dense_rank": 5,
+        "rerank_score": 0.052,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0203,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0079,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_032",
+    "query": "我下单时可以指定顺丰配送吗？",
+    "gold": [
+      "配送说明#04-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#04-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9626,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 2,
+        "rerank_score": 0.069,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#02-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0559,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#06-00",
+        "dense_rank": 3,
+        "rerank_score": 0.022,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0212,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_033",
+    "query": "快递放丰巢了，我忙忘了，多久不取会有问题？",
+    "gold": [
+      "配送说明#05-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 1,
+        "rerank_score": 0.8817,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 5,
+        "rerank_score": 0.2,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#06-00",
+        "dense_rank": 2,
+        "rerank_score": 0.142,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0558,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#04-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0163,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_034",
+    "query": "签收后才发现快递把电脑外壳摔坏了，应该怎么办？",
+    "gold": [
+      "退换货政策#02-00",
+      "退换货政策#02-02",
+      "配送说明#05-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "配送说明#05-02",
+        "dense_rank": 2,
+        "rerank_score": 0.9779,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#05-00",
+        "dense_rank": 1,
+        "rerank_score": 0.6526,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-02",
+        "dense_rank": 4,
+        "rerank_score": 0.2897,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-00",
+        "dense_rank": 3,
+        "rerank_score": 0.2143,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#06-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0331,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 0.3333333333333333,
+        "precision@5": 0.2,
+        "mrr@5": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.3333333333333333,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 0.5,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "precision@1": 0.0,
+        "mrr@1": 0.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 0.3333333333333333,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.3333333333333333,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 0.3333333333333333,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_035",
+    "query": "现货下单三天还没发货，能催吗？可以退款吗？",
+    "gold": [
+      "常见问题FAQ#01-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9729,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 4,
+        "rerank_score": 0.6674,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-00",
+        "dense_rank": 3,
+        "rerank_score": 0.6367,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.5567,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 2,
+        "rerank_score": 0.3361,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_036",
+    "query": "你们能用Apple Pay或者花呗分期付款吗？",
+    "gold": [
+      "常见问题FAQ#01-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#01-01",
+        "dense_rank": 1,
+        "rerank_score": 0.9841,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#05-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0015,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#03-00",
+        "dense_rank": 4,
+        "rerank_score": 0.001,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#03-01",
+        "dense_rank": 2,
+        "rerank_score": 0.0001,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-03",
+        "dense_rank": 3,
+        "rerank_score": 0.0001,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_037",
+    "query": "订单还没发货，我想换个收货地址和衣服尺码，可以一起改吗？",
+    "gold": [
+      "常见问题FAQ#01-02"
+    ],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#01-02",
+        "dense_rank": 1,
+        "rerank_score": 0.97,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "配送说明#05-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0502,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "配送说明#05-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0447,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 2,
+        "rerank_score": 0.0419,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-02",
+        "dense_rank": 3,
+        "rerank_score": 0.0181,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_038",
+    "query": "商品降价了，普通会员和钻石会员都能申请价保吗？能保多久？",
+    "gold": [
+      "常见问题FAQ#02-00"
+    ],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#02-00",
+        "dense_rank": 1,
+        "rerank_score": 0.9992,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "会员权益#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.2553,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#02-03",
+        "dense_rank": 3,
+        "rerank_score": 0.0372,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "会员权益#05-00",
+        "dense_rank": 4,
+        "rerank_score": 0.0116,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 5,
+        "rerank_score": 0.0034,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_039",
+    "query": "微信退款和银行卡退款分别多久能到账？",
+    "gold": [
+      "常见问题FAQ#03-01"
+    ],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#03-01",
+        "dense_rank": 1,
+        "rerank_score": 0.9972,
+        "rerank_rank": 1,
+        "is_gold": true
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.3482,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#02-01",
+        "dense_rank": 5,
+        "rerank_score": 0.3423,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 4,
+        "rerank_score": 0.142,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 3,
+        "rerank_score": 0.1139,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      },
+      "after": {
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "mrr@5": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "precision@3": 0.3333333333333333,
+        "mrr@3": 1.0,
+        "hit@1": 1.0,
+        "recall@1": 1.0,
+        "precision@1": 1.0,
+        "mrr@1": 1.0
+      }
+    }
+  },
+  {
+    "case_id": "q_040",
+    "query": "订单已经发货了，我现在可以直接取消订单吗？",
+    "gold": [],
+    "items": [
+      {
+        "chunk_id": "常见问题FAQ#01-02",
+        "dense_rank": 1,
+        "rerank_score": 0.7111,
+        "rerank_rank": 1,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#03-00",
+        "dense_rank": 5,
+        "rerank_score": 0.4744,
+        "rerank_rank": 2,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#01-00",
+        "dense_rank": 3,
+        "rerank_score": 0.263,
+        "rerank_rank": 3,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "常见问题FAQ#01-00",
+        "dense_rank": 2,
+        "rerank_score": 0.122,
+        "rerank_rank": 4,
+        "is_gold": false
+      },
+      {
+        "chunk_id": "退换货政策#04-01",
+        "dense_rank": 4,
+        "rerank_score": 0.0921,
+        "rerank_rank": 5,
+        "is_gold": false
+      }
+    ],
+    "metrics": {
+      "before": {
+        "hit@5": null,
+        "recall@5": null,
+        "precision@5": null,
+        "mrr@5": null,
+        "hit@3": null,
+        "recall@3": null,
+        "precision@3": null,
+        "mrr@3": null,
+        "hit@1": null,
+        "recall@1": null,
+        "precision@1": null,
+        "mrr@1": null
+      },
+      "after": {
+        "hit@5": null,
+        "recall@5": null,
+        "precision@5": null,
+        "mrr@5": null,
+        "hit@3": null,
+        "recall@3": null,
+        "precision@3": null,
+        "mrr@3": null,
+        "hit@1": null,
+        "recall@1": null,
+        "precision@1": null,
+        "mrr@1": null
+      }
+    }
+  }
+]

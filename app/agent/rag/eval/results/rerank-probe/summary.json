@@ -1,0 +1,38 @@
+{
+  "model": "BAAI/bge-reranker-base",
+  "case_count": 32,
+  "metrics": {
+    "recall@1": {
+      "before": 0.7204,
+      "after": 0.8387
+    },
+    "hit@3": {
+      "before": 1.0,
+      "after": 1.0
+    },
+    "recall@3": {
+      "before": 0.914,
+      "after": 0.9355
+    },
+    "precision@3": {
+      "before": 0.3548,
+      "after": 0.3763
+    },
+    "mrr@3": {
+      "before": 0.8871,
+      "after": 0.9677
+    },
+    "hit@5": {
+      "before": 1.0,
+      "after": 1.0
+    },
+    "recall@5": {
+      "before": 0.9462,
+      "after": 0.9462
+    },
+    "mrr@5": {
+      "before": 0.8871,
+      "after": 0.9677
+    }
+  }
+}
