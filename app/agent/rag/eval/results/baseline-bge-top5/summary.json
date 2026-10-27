@@ -1,0 +1,24 @@
+{
+  "dataset": "app/agent/rag/eval/datasets/rag_eval.example.json",
+  "case_count": 32,
+  "answerable_case_count": 31,
+  "top_k": 5,
+  "no_judge": true,
+  "retrieval_metrics": {
+    "hit@5": 1.0,
+    "recall@5": 0.9462,
+    "precision@5": 0.2323,
+    "mrr@5": 0.8871
+  },
+  "latency_ms": {
+    "retrieval_mean": 568.3072,
+    "generation_mean": null,
+    "total_mean": 568.3072
+  },
+  "notes": [
+    "Retrieval metrics exclude cases with empty expected_chunk_ids.",
+    "Precision@K uses K as denominator even if fewer than K chunks are returned.",
+    "For unanswerable cases, add a separate abstention/unsupported-answer review; empty gold IDs are not scored as perfect retrieval.",
+    "--no-judge 已启用：跳过 generate 调用与生成层评测。"
+  ]
+}
