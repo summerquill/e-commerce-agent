@@ -26,8 +26,11 @@ class Settings(BaseSettings):
     kb_dir: str = "app/agent/rag/knowledge"
     # 向量后端：numpy（手写余弦，教学透明，零依赖，默认）/ chroma（向量数据库，生产代表，需 pip install chromadb）
     rag_backend: str = "numpy"
-    # 检索模式：dense（纯向量，默认）/ hybrid（dense 保底 + BM25 sparse 补位）
+    # 检索模式：dense（纯向量，默认）/ hybrid（dense 保底 + BM25 sparse 补位）/
+    # hybrid_rerank（hybrid 之上再对最终 top-k 做 CrossEncoder 精排）
     retrieval_mode: str = "dense"
+    # hybrid_rerank 模式的本地重排模型（首次运行自动下载到 ~/.cache/huggingface）
+    local_reranker_model: str = "BAAI/bge-reranker-base"
     # NumpyBackend 的 JSON 索引路径
     kb_index_path: str = "app/sessions/kb_index.json"
     # Hybrid 模式的 BM25 词汇索引路径

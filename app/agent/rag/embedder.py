@@ -31,6 +31,28 @@ class EmbedderProtocol(Protocol):
     def encode_one(self, text: str) -> list[float]: ...
 
 
+def pick_torch_device() -> str:
+    """探测可用 torch 设备：Apple Silicon 走 MPS，否则 cuda/cpu。
+
+    供 LocalBgeEmbedder 与 Reranker 共用。注意 mps 仅 Apple Silicon
+    可用，torch 在 Intel Mac 上会误报 mps available，需按机器架构过滤。
+    """
+    try:
+        import platform
+
+        import torch
+        if (
+            platform.machine() == "arm64"
+            and torch.backends.mps.is_available()
+        ):
+            return "mps"
+        if torch.cuda.is_available():
+            return "cuda"
+        return "cpu"
+    except ImportError:
+        return "cpu"
+
+
 # ---------------------------------------------------------------------------
 # Remote: OpenAI Embeddings
 # ---------------------------------------------------------------------------
@@ -88,22 +110,7 @@ class LocalBgeEmbedder:
         from sentence_transformers import SentenceTransformer
 
         if device is None:
-            try:
-                import platform
-
-                import torch
-                # mps 仅 Apple Silicon 可用；torch 在 Intel Mac 上会误报 mps available
-                if (
-                    platform.machine() == "arm64"
-                    and torch.backends.mps.is_available()
-                ):
-                    device = "mps"
-                elif torch.cuda.is_available():
-                    device = "cuda"
-                else:
-                    device = "cpu"
-            except ImportError:
-                device = "cpu"
+            device = pick_torch_device()
 
         self._model = SentenceTransformer(model_name, device=device)
         self._model_name = model_name

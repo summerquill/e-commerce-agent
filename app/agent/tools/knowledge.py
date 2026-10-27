@@ -47,6 +47,7 @@ def _get_retriever():
 
     - dense ：KnowledgeRetriever，纯向量语义检索
     - hybrid：HybridRetriever，dense 保底 + BM25 sparse 补位，接口不变
+    - hybrid_rerank：hybrid 之上注入 Reranker 对最终结果精排
     """
     global _retriever
     if _retriever is None:
@@ -66,9 +67,21 @@ def _get_retriever():
                 dense_retriever=dense,
                 lexical_index=LexicalIndex(Path(settings.kb_bm25_path)),
             )
+        elif mode == "hybrid_rerank":
+            # 延迟导入：非精排模式无需加载 jieba/rank_bm25/torch
+            from app.agent.rag.lexical import LexicalIndex
+            from app.agent.rag.reranker import Reranker
+            from app.agent.rag.retriever import HybridRetriever
+
+            _retriever = HybridRetriever(
+                dense_retriever=dense,
+                lexical_index=LexicalIndex(Path(settings.kb_bm25_path)),
+                reranker=Reranker(),
+            )
         else:
             raise ValueError(
-                f"未知检索模式: {settings.retrieval_mode}（可选: dense / hybrid）"
+                f"未知检索模式: {settings.retrieval_mode}"
+                "（可选: dense / hybrid / hybrid_rerank）"
             )
         _retriever.load()
     return _retriever

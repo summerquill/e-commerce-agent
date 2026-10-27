@@ -74,7 +74,12 @@ class HybridRetriever:
        多个候选时按 dense 名次优先取第一个，替换骨架末位，至多补 1 个；
     3. 两路 fetch_depth 之外的 chunk 不参与（垃圾防火墙）。
 
-    返回条目的 score 一律保留 dense 余弦分：排序由结构决定，分值仅作参考。
+    返回条目的 score 一律保留 dense 余弦分：排序由结构（补位/精排）决定，
+    分值仅作参考。
+
+    reranker（可选）：注入后对融合结果再做一次 CrossEncoder 精排。
+    精排只调整顺序、不增删候选——补位负责「候选覆盖」（recall@5），
+    rerank 负责「排序质量」（recall@1），分工互补，探针数据见案例文档第 6 节。
     """
 
     def __init__(
@@ -83,11 +88,13 @@ class HybridRetriever:
         lexical_index,  # LexicalIndex，鸭子类型避免本模块依赖 jieba
         fetch_depth: int = 10,
         sparse_top: int = 2,
+        reranker=None,  # Reranker | None，注入后对最终结果精排
     ):
         self._dense = dense_retriever
         self._lexical = lexical_index
         self._fetch_depth = fetch_depth
         self._sparse_top = sparse_top
+        self._reranker = reranker
 
     @property
     def size(self) -> int:
@@ -116,4 +123,19 @@ class HybridRetriever:
         )
         if substitute is not None:
             skeleton = skeleton[:-1] + [substitute]
+        if self._reranker is not None:
+            skeleton = self._rerank(query, skeleton)
         return skeleton
+
+    def _rerank(self, query: str, items: list[RetrievedChunk]) -> list[RetrievedChunk]:
+        """CrossEncoder 精排：按 rerank 分数降序重排，不改候选集。
+
+        同分按 chunk_id 排序保证确定性（可复现评测）；
+        score 字段仍保留 dense 余弦分，排序依据由 rerank 排名体现。
+        """
+        scores = self._reranker.score(query, [h.chunk.text for h in items])
+        ranked = sorted(
+            zip(items, scores),
+            key=lambda pair: (-pair[1], pair[0].chunk.chunk_id),
+        )
+        return [item for item, _ in ranked]
