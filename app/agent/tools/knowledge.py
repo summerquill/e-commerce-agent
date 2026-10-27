@@ -8,6 +8,10 @@ search_knowledge 面向非结构化文本（退换货政策、配送说明、FAQ
 - numpy ：手写余弦相似度，零依赖，教学透明
 - chroma：嵌入式向量数据库，HNSW 索引，工程代表性
 
+检索模式由 settings.retrieval_mode 切换：
+- dense ：纯向量语义检索（默认）
+- hybrid：dense + BM25 词汇检索，RRF 融合（需先构建 BM25 索引）
+
 为避免每次进程启动都重建索引，单例缓存 Retriever。
 """
 
@@ -38,12 +42,34 @@ def _create_backend_from_settings():
     )
 
 
-def _get_retriever() -> KnowledgeRetriever:
+def _get_retriever():
+    """按 settings.retrieval_mode 构建（并缓存）检索器单例。
+
+    - dense ：KnowledgeRetriever，纯向量语义检索
+    - hybrid：HybridRetriever，dense 保底 + BM25 sparse 补位，接口不变
+    """
     global _retriever
     if _retriever is None:
         embedder = create_embedder()
         backend = _create_backend_from_settings()
-        _retriever = KnowledgeRetriever(embedder=embedder, backend=backend)
+        dense = KnowledgeRetriever(embedder=embedder, backend=backend)
+
+        mode = settings.retrieval_mode.lower()
+        if mode == "dense":
+            _retriever = dense
+        elif mode == "hybrid":
+            # 延迟导入：dense 模式无需加载 jieba/rank_bm25
+            from app.agent.rag.lexical import LexicalIndex
+            from app.agent.rag.retriever import HybridRetriever
+
+            _retriever = HybridRetriever(
+                dense_retriever=dense,
+                lexical_index=LexicalIndex(Path(settings.kb_bm25_path)),
+            )
+        else:
+            raise ValueError(
+                f"未知检索模式: {settings.retrieval_mode}（可选: dense / hybrid）"
+            )
         _retriever.load()
     return _retriever
 

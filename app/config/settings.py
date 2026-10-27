@@ -26,8 +26,12 @@ class Settings(BaseSettings):
     kb_dir: str = "app/agent/rag/knowledge"
     # 向量后端：numpy（手写余弦，教学透明，零依赖，默认）/ chroma（向量数据库，生产代表，需 pip install chromadb）
     rag_backend: str = "numpy"
+    # 检索模式：dense（纯向量，默认）/ hybrid（dense 保底 + BM25 sparse 补位）
+    retrieval_mode: str = "dense"
     # NumpyBackend 的 JSON 索引路径
     kb_index_path: str = "app/sessions/kb_index.json"
+    # Hybrid 模式的 BM25 词汇索引路径
+    kb_bm25_path: str = "app/sessions/kb_bm25.json"
     # ChromaBackend 的持久化目录与 collection 名
     chroma_persist_dir: str = "app/sessions/chroma"
     chroma_collection: str = "ecom_kb"
