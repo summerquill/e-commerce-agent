@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 from app.config.settings import settings  # noqa: E402
 from app.agent.rag.backends import create_backend  # noqa: E402
 from app.agent.rag.chunker import chunk_markdown_dir  # noqa: E402
-from app.agent.rag.embedder import Embedder  # noqa: E402
+from app.agent.rag.embedder import create_embedder  # noqa: E402
 
 
 def _build_backend(name: str):
@@ -65,7 +65,12 @@ def main():
     print(f"  后端      : {args.backend}")
     print(f"  源目录    : {kb_dir}")
     print(f"  索引目标  : {target_desc}")
-    print(f"  Embedding : {settings.embedding_model}")
+    _emb_name = (
+        settings.embedding_model
+        if settings.embedding_backend == "remote"
+        else settings.local_embedding_model
+    )
+    print(f"  Embedding : {settings.embedding_backend} / {_emb_name}")
     print("=" * 60)
 
     print("\n[1/3] 扫描并切分 markdown 文档...")
@@ -81,12 +86,9 @@ def main():
         print(f"   - {doc}: {n} chunk")
     print(f"   合计 {len(chunks)} 个 chunk")
 
-    print(f"\n[2/3] 调用 {settings.embedding_model} 批量向量化...")
-    embedder = Embedder(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        model=settings.embedding_model,
-    )
+    print(f"\n[2/3] 调用向量化...")
+    embedder = create_embedder()
+    print(f"   backend={settings.embedding_backend}  model={embedder.model}")
     vectors = embedder.encode([c.text for c in chunks])
     dim = len(vectors[0]) if vectors else 0
     print(f"   完成，向量维度 = {dim}")
@@ -95,7 +97,7 @@ def main():
     backend.upsert(
         chunks=chunks,
         vectors=vectors,
-        embedding_model=settings.embedding_model,
+        embedding_model=embedder.model,
     )
     print(f"   已写入 {backend.size()} 条向量")
 

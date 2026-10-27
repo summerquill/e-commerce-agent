@@ -57,11 +57,7 @@ GENERATION_PROMPT = """你是电商客服。基于下面检索到的知识库内
 
 def _load_retriever() -> KnowledgeRetriever:
     """创建并加载检索器（复用 settings 配置）。"""
-    embedder = Embedder(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        model=settings.embedding_model,
-    )
+    embedder = create_embedder()
     if settings.rag_backend.lower() == "numpy":
         backend = create_backend("numpy", index_path=Path(settings.kb_index_path))
     elif settings.rag_backend.lower() == "chroma":

@@ -16,7 +16,7 @@ from typing import Optional
 
 from app.config.settings import settings
 from app.agent.rag.backends import create_backend
-from app.agent.rag.embedder import Embedder
+from app.agent.rag.embedder import create_embedder
 from app.agent.rag.retriever import KnowledgeRetriever
 
 _retriever: Optional[KnowledgeRetriever] = None
@@ -41,11 +41,7 @@ def _create_backend_from_settings():
 def _get_retriever() -> KnowledgeRetriever:
     global _retriever
     if _retriever is None:
-        embedder = Embedder(
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            model=settings.embedding_model,
-        )
+        embedder = create_embedder()
         backend = _create_backend_from_settings()
         _retriever = KnowledgeRetriever(embedder=embedder, backend=backend)
         _retriever.load()

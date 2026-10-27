@@ -49,12 +49,8 @@ def _clean_session():
     Path(TEST_SESSION).unlink(missing_ok=True)
 
 
-def _make_embedder() -> Embedder:
-    return Embedder(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        model=settings.embedding_model,
-    )
+def _make_embedder() -> EmbedderProtocol:
+    return create_embedder()
 
 
 def _make_backend(backend_name: str):

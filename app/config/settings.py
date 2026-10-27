@@ -17,7 +17,12 @@ class Settings(BaseSettings):
     mcp_server_url: str = "http://127.0.0.1:9123/mcp"
 
     # RAG 配置（第5期）
+    # embedding_backend: remote（OpenAI API，默认）| local（本地开源模型）
+    embedding_backend: str = "remote"
+    # remote 模式：OpenAI Embeddings 模型名
     embedding_model: str = "text-embedding-3-small"
+    # local 模式：sentence-transformers 模型名（首次运行自动下载到 ~/.cache/huggingface）
+    local_embedding_model: str = "BAAI/bge-small-zh-v1.5"
     kb_dir: str = "app/agent/rag/knowledge"
     # 向量后端：numpy（手写余弦，教学透明，零依赖，默认）/ chroma（向量数据库，生产代表，需 pip install chromadb）
     rag_backend: str = "numpy"
