@@ -51,10 +51,13 @@ def summarize(
     model: str,
     old_messages: list[dict],
     prev_summary: Optional[str],
+    hard_cap: Optional[int] = None,
 ) -> str:
     """把老对话（可选地带上上一次 summary）压缩成新的 summary 文本。
 
     支持 user / assistant / tool 以及含 tool_calls 的 assistant 消息。
+    hard_cap 为摘要硬截断兜底字数：prompt 级长度约束已被实证不可靠
+    （12 轮中 4 轮超 300 字），超限时直接截断，实体由 pinned 锚点兜底。
     """
     parts: list[str] = []
     if prev_summary:
@@ -72,4 +75,7 @@ def summarize(
             {"role": "user", "content": user_content},
         ],
     )
-    return response.choices[0].message.content.strip()
+    text = response.choices[0].message.content.strip()
+    if hard_cap and len(text) > hard_cap:
+        text = text[:hard_cap]
+    return text

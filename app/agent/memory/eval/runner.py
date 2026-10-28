@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from app.agent.memory.eval.factcheck import Fact, FactState, check_facts, message_text
+from app.agent.pinned import extract_pinnable_entities, merge_pinned, render_pinned_section
 from app.agent.summarizer import split_history
 
 
@@ -33,6 +34,7 @@ class RoundRecord:
     facts: dict[str, FactState]
     summary: str = ""
     input_messages: list[dict] = field(default_factory=list)
+    pinned: list[str] = field(default_factory=list)
 
     def retention(self) -> float:
         if not self.facts:
@@ -50,6 +52,7 @@ class RoundRecord:
             "retention": round(self.retention(), 4),
             "summary": self.summary,
             "input_messages": self.input_messages,
+            "pinned": self.pinned,
         }
 
 
@@ -63,10 +66,17 @@ class ScriptResult:
     final_window: list[dict]
     rounds: list[RoundRecord] = field(default_factory=list)
     final_facts: dict[str, FactState] = field(default_factory=dict)
+    final_pinned: list[str] = field(default_factory=list)
+    fact_categories: dict[str, str] = field(default_factory=dict)
 
     @property
     def n_rounds(self) -> int:
         return len(self.rounds)
+
+    @property
+    def pinned_chars(self) -> int:
+        """锚点段的持久上下文成本（锚点不是免费的，计入压缩比分母）。"""
+        return len(render_pinned_section(self.final_pinned) or "")
 
     @property
     def retention(self) -> float:
@@ -92,9 +102,11 @@ class ScriptResult:
 
     @property
     def compression_ratio(self) -> float:
-        """压缩比 = 原始全部消息字符数 /（最终 summary + 窗口消息字符数）。"""
-        final_chars = len(self.final_summary or "") + sum(
-            len(message_text(m)) for m in self.final_window
+        """压缩比 = 原始全部消息字符数 /（最终 summary + 锚点段 + 窗口消息字符数）。"""
+        final_chars = (
+            len(self.final_summary or "")
+            + self.pinned_chars
+            + sum(len(message_text(m)) for m in self.final_window)
         )
         if final_chars == 0:
             return 1.0
@@ -107,6 +119,9 @@ class ScriptResult:
             "original_chars": self.original_chars,
             "final_summary_chars": len(self.final_summary or ""),
             "final_summary": self.final_summary,
+            "final_pinned": self.final_pinned,
+            "final_pinned_chars": self.pinned_chars,
+            "fact_categories": self.fact_categories,
             "final_window_chars": sum(len(message_text(m)) for m in self.final_window),
             "final_window": self.final_window,
             "compression_ratio": round(self.compression_ratio, 4),
@@ -118,23 +133,39 @@ class ScriptResult:
         }
 
 
+def _check_context(summary: str | None, pinned: list[str]) -> str:
+    """事实检查用的持久上下文：锚点段 + 摘要（pin 关闭时等价于纯摘要）。"""
+    context = summary or ""
+    section = render_pinned_section(pinned)
+    if section:
+        context = section + "\n\n" + context
+    return context
+
+
 def run_script(
     script: dict,
     summarize_fn,
     threshold: int,
     keep_recent: int,
+    pin_entities: bool = False,
 ) -> ScriptResult:
     """复放单个对话脚本，逐回合触发压缩并记录事实保留状态。
 
     script 格式见 datasets/compression_eval.json：
     {"id", "messages": [...], "facts": [{"id", "category", "gold"}]}
+
+    pin_entities=True 时对齐生产 pinned 机制：每轮压缩前抽取老消息中的
+    关键实体并入 pinned 列表，事实检查改为对「锚点段 + summary」的合并
+    上下文做匹配，与 chat.py 的注入方式一致。
     """
     facts = [
         Fact(id=f["id"], category=f["category"], gold=f["gold"])
         for f in script["facts"]
     ]
+    fact_categories = {f["id"]: f["category"] for f in script["facts"]}
     messages: list[dict] = []
     summary: str | None = None
+    pinned: list[str] = []
     rounds: list[RoundRecord] = []
     original_chars = sum(len(message_text(m)) for m in script["messages"])
 
@@ -155,18 +186,21 @@ def run_script(
         old, recent = split_result
         summary = summarize_fn(old, summary)
         messages = recent
+        if pin_entities:
+            pinned = merge_pinned(pinned, extract_pinnable_entities(old))
         rounds.append(RoundRecord(
             round=len(rounds) + 1,
             n_compressed=len(old),
             n_window=len(messages),
             summary_chars=len(summary),
             window_chars=sum(len(message_text(m)) for m in messages),
-            facts=check_facts(facts, summary, messages),
+            facts=check_facts(facts, _check_context(summary, pinned), messages),
             summary=summary,
             input_messages=list(old),
+            pinned=list(pinned),
         ))
 
-    final_facts = check_facts(facts, summary, messages)
+    final_facts = check_facts(facts, _check_context(summary, pinned), messages)
     return ScriptResult(
         script_id=script["id"],
         original_chars=original_chars,
@@ -174,6 +208,8 @@ def run_script(
         final_window=messages,
         rounds=rounds,
         final_facts=final_facts,
+        final_pinned=list(pinned),
+        fact_categories=fact_categories,
     )
 
 
@@ -182,16 +218,21 @@ def evaluate(
     summarize_fn,
     threshold: int,
     keep_recent: int,
+    pin_entities: bool = False,
 ) -> list[ScriptResult]:
     """跑完数据集里的全部脚本。"""
     return [
-        run_script(script, summarize_fn, threshold, keep_recent)
+        run_script(script, summarize_fn, threshold, keep_recent, pin_entities)
         for script in dataset["scripts"]
     ]
 
 
 def aggregate(results: list[ScriptResult]) -> dict:
-    """跨脚本聚合：均值指标 + 衰减曲线（按压缩轮次对齐）。"""
+    """跨脚本聚合：均值指标 + 衰减曲线（按压缩轮次对齐）+ 分类别保留率。
+
+    分类别用跨脚本合并计数（pooling）：单脚本单类别事实数太少，
+    均值化会放大方差；合并后 Entity 类能到几十条，读数才稳定。
+    """
     if not results:
         return {}
 
@@ -200,6 +241,21 @@ def aggregate(results: list[ScriptResult]) -> dict:
     for i in range(1, max_rounds + 1):
         rets = [r.rounds[i - 1].retention() for r in results if r.n_rounds >= i]
         decay_curve[f"round_{i}"] = round(sum(rets) / len(rets), 4)
+
+    cat_total: dict[str, int] = {}
+    cat_retained: dict[str, int] = {}
+    for r in results:
+        for fid, state in r.final_facts.items():
+            cat = r.fact_categories.get(fid, "unknown")
+            cat_total[cat] = cat_total.get(cat, 0) + 1
+            cat_retained[cat] = cat_retained.get(cat, 0) + state.retained
+    retention_by_category = {
+        cat: {
+            "retention": round(cat_retained[cat] / cat_total[cat], 4),
+            "total": cat_total[cat],
+        }
+        for cat in sorted(cat_total)
+    }
 
     return {
         "n_scripts": len(results),
@@ -211,4 +267,5 @@ def aggregate(results: list[ScriptResult]) -> dict:
             sum(r.compression_ratio for r in results) / len(results), 4),
         "total_rounds": sum(r.n_rounds for r in results),
         "decay_curve": decay_curve,
+        "retention_by_category": retention_by_category,
     }

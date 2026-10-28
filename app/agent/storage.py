@@ -12,11 +12,13 @@ def save_session(
     messages: list[dict],
     summary: Optional[str],
     short_term_memory: Optional[dict] = None,
+    pinned_facts: Optional[list[str]] = None,
 ) -> None:
     """把对话状态原子写入 JSON 文件。
 
     messages 只包含原始 user/assistant 条目（不含 system / summary）。
     short_term_memory 为短期记忆的序列化数据（第7期）。
+    pinned_facts 为关键实体锚点列表（跨压缩轮次持久化）。
     """
     file_path = Path(path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -27,6 +29,7 @@ def save_session(
         "summary": summary,
         "messages": messages,
         "short_term_memory": short_term_memory,
+        "pinned_facts": pinned_facts,
     }
 
     tmp_path = file_path.with_suffix(file_path.suffix + ".tmp")
@@ -56,6 +59,7 @@ def load_session(path: str) -> Optional[dict]:
         "summary": data.get("summary"),
         "messages": data.get("messages", []),
         "short_term_memory": data.get("short_term_memory"),
+        "pinned_facts": data.get("pinned_facts"),
     }
 
 

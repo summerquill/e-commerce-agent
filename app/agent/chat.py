@@ -3,6 +3,7 @@ from typing import Optional
 
 from openai import OpenAI
 
+from app.agent.pinned import extract_pinnable_entities, merge_pinned, render_pinned_section
 from app.agent.storage import delete_session, load_session, save_session
 from app.agent.summarizer import split_history, summarize
 from app.config.settings import settings
@@ -56,11 +57,13 @@ class EcomAgent:
 
         self.raw_messages: list[dict] = []
         self.summary: Optional[str] = None
+        self.pinned_facts: list[str] = []
 
         loaded = load_session(self.session_path)
         if loaded:
             self.summary = loaded["summary"]
             self.raw_messages = loaded["messages"]
+            self.pinned_facts = loaded.get("pinned_facts") or []
             if loaded.get("short_term_memory"):
                 self.memory_manager.restore_stm(loaded["short_term_memory"])
 
@@ -88,12 +91,14 @@ class EcomAgent:
         save_session(
             self.session_path, self.raw_messages, self.summary,
             short_term_memory=self.memory_manager.stm_to_dict(),
+            pinned_facts=self.pinned_facts,
         )
         return result
 
     def reset(self):
         self.raw_messages = []
         self.summary = None
+        self.pinned_facts = []
         self.memory_manager.reset_short_term()
         delete_session(self.session_path)
 
@@ -101,6 +106,7 @@ class EcomAgent:
         save_session(
             self.session_path, self.raw_messages, self.summary,
             short_term_memory=self.memory_manager.stm_to_dict(),
+            pinned_facts=self.pinned_facts,
         )
 
     def close(self):
@@ -235,6 +241,9 @@ class EcomAgent:
                     "content": f"以下是此前对话的摘要，用于延续上下文记忆：\n{self.summary}",
                 }
             )
+        pinned_section = render_pinned_section(self.pinned_facts)
+        if pinned_section:
+            messages.append({"role": "system", "content": pinned_section})
         messages.extend(self.raw_messages)
         return messages
 
@@ -249,12 +258,17 @@ class EcomAgent:
             model=self.model,
             old_messages=old_messages,
             prev_summary=self.summary,
+            hard_cap=settings.summary_hard_cap,
         )
         self.summary = new_summary
         self.raw_messages = recent
+        # 关键实体先于压缩抽取：被压掉的老消息里出现的标识符在锚点段永久可查
+        self.pinned_facts = merge_pinned(
+            self.pinned_facts, extract_pinnable_entities(old_messages),
+        )
         print(
             f"\n💾 [已压缩 {len(old_messages)} 条老消息 → summary "
-            f"({len(new_summary)} 字)]\n"
+            f"({len(new_summary)} 字, pinned {len(self.pinned_facts)} 项)]\n"
         )
 
     def _print_thought(self, text: str) -> None:
