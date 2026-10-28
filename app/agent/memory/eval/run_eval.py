@@ -49,8 +49,11 @@ def main() -> None:
     dataset = json.loads(Path(args.dataset).read_text(encoding="utf-8"))
     if args.summarizer == "llm":
         # 懒加载：离线基线模式不引入真实 client
+        # --max-chars 对 llm 摘要器是 prompt 级预算（默认 300，压测可调小）
         from app.agent.memory.eval.llm_summarizer import build_llm_summarizer
-        summarize_fn = build_llm_summarizer(hard_cap=args.hard_cap or None)
+        summarize_fn = build_llm_summarizer(
+            hard_cap=args.hard_cap or None, budget_chars=args.max_chars,
+        )
     else:
         summarize_fn = SUMMARIZERS[args.summarizer](max_chars=args.max_chars)
     results = evaluate(

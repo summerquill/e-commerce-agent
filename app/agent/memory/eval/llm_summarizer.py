@@ -19,8 +19,16 @@ from app.agent.summarizer import summarize
 from app.config.settings import settings
 
 
-def build_llm_summarizer(timeout: float = 60.0, hard_cap: int | None = None):
-    """构建真实 LLM 摘要器，client/model 取自 settings（.env）。"""
+def build_llm_summarizer(
+    timeout: float = 60.0,
+    hard_cap: int | None = None,
+    budget_chars: int | None = None,
+):
+    """构建真实 LLM 摘要器，client/model 取自 settings（.env）。
+
+    budget_chars 为 prompt 级摘要预算（None=默认 300）；压测时传小值
+    （如 100）迫使摘要取舍，观察锚点出险。
+    """
     client = OpenAI(
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
@@ -31,10 +39,14 @@ def build_llm_summarizer(timeout: float = 60.0, hard_cap: int | None = None):
 
     def summarize_fn(old_messages: list[dict], prev_summary: str | None) -> str:
         t0 = time.time()
-        out = summarize(client, model, old_messages, prev_summary, hard_cap=hard_cap)
+        out = summarize(
+            client, model, old_messages, prev_summary,
+            hard_cap=hard_cap, **({"budget_chars": budget_chars} if budget_chars else {}),
+        )
         cap_note = f" cap={hard_cap}" if hard_cap else ""
+        budget_note = f" budget={budget_chars}" if budget_chars else ""
         print(
-            f"  [llm summarize{cap_note}] model={model} old={len(old_messages)}条 "
+            f"  [llm summarize{budget_note}{cap_note}] model={model} old={len(old_messages)}条 "
             f"prev={len(prev_summary or '')}字 -> {len(out)}字 "
             f"({time.time() - t0:.1f}s)"
         )

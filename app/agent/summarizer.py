@@ -3,7 +3,7 @@ from typing import Optional
 
 from openai import OpenAI
 
-from app.prompts.summarizer import SUMMARY_PROMPT
+from app.prompts.summarizer import SUMMARY_PROMPT, build_summary_prompt
 
 
 def split_history(
@@ -52,12 +52,14 @@ def summarize(
     old_messages: list[dict],
     prev_summary: Optional[str],
     hard_cap: Optional[int] = None,
+    budget_chars: int = 300,
 ) -> str:
     """把老对话（可选地带上上一次 summary）压缩成新的 summary 文本。
 
     支持 user / assistant / tool 以及含 tool_calls 的 assistant 消息。
-    hard_cap 为摘要硬截断兜底字数：prompt 级长度约束已被实证不可靠
-    （12 轮中 4 轮超 300 字），超限时直接截断，实体由 pinned 锚点兜底。
+    budget_chars 为 prompt 级质量目标（无强制力）；hard_cap 为代码级
+    硬截断兜底：prompt 约束已被实证不可靠（36 轮中 11 轮超 300 字），
+    超限时直接截断，实体由 pinned 锚点兜底。
     """
     parts: list[str] = []
     if prev_summary:
@@ -66,12 +68,15 @@ def summarize(
     parts.append("【待压缩对话】\n" + build_transcript(old_messages))
 
     user_content = "\n\n".join(parts)
+    system_prompt = (
+        SUMMARY_PROMPT if budget_chars == 300 else build_summary_prompt(budget_chars)
+    )
 
     response = client.chat.completions.create(
         model=model,
         temperature=0.3,
         messages=[
-            {"role": "system", "content": SUMMARY_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
     )
