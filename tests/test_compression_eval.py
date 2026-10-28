@@ -117,6 +117,21 @@ class TestCheckFacts(unittest.TestCase):
         self.assertFalse(states["order"].in_summary)
         self.assertTrue(states["order"].retained)
 
+    def test_matching_ignores_whitespace(self):
+        """回归用例（测试发现）：LLM 摘要把「100 元无门槛」重写成
+        「100元无门槛」，空白敏感匹配会漏报已保留的事实。"""
+        facts = [Fact(id="c", category="promise", gold="100 元无门槛")]
+        states = check_facts(
+            facts, summary="客服已申请并审核通过100元无门槛券", window_messages=[])
+        self.assertTrue(states["c"].in_summary)
+        states2 = check_facts(
+            facts, summary=None,
+            window_messages=[{"role": "user", "content": "给了张 100 元\n无门槛 的券"}])
+        self.assertTrue(states2["c"].in_window)
+        # 语义不同的事实仍不可误报
+        states3 = check_facts(facts, summary="发放了 50 元优惠券", window_messages=[])
+        self.assertFalse(states3["c"].in_summary)
+
     def test_summary_or_window(self):
         facts = [Fact(id="a", category="other", gold="钻石会员"),
                  Fact(id="b", category="other", gold="不上架")]
@@ -286,6 +301,38 @@ class TestAgentEquivalence(unittest.TestCase):
             expected_old, expected_recent = split_history(msgs, keep_recent=2)
             self.assertEqual(agent.raw_messages, expected_recent)
             self.assertEqual(len(expected_old), 4)
+
+
+# ──────────────────── trace 落盘 ────────────────────
+
+class TestTracePersistence(unittest.TestCase):
+
+    def test_round_trace_landed_in_to_dict(self):
+        """每轮摘要全文 + 送入摘要器的原始老消息必须随结果落盘（可回溯复现）。"""
+        dataset = _load_dataset()
+        script = _script_by_id(dataset, "ret_flow_001")
+        result = run_script(script, _constant_summarizer("固定摘要"), threshold=4, keep_recent=2)
+        d = result.to_dict()
+        self.assertEqual(len(d["rounds"]), result.n_rounds)
+        for r in d["rounds"]:
+            self.assertEqual(r["summary"], "固定摘要")
+            self.assertEqual(len(r["input_messages"]), r["n_compressed"])
+        self.assertEqual(d["final_summary"], "固定摘要")
+        self.assertEqual(d["final_window"], result.final_window)
+
+    def test_prod_dataset_late_facts_in_window_at_t10k3(self):
+        """生产配置（t=10/k=3）下：各长脚本触发 4 轮压缩，
+        late 控制组事实必须落在最终保留窗口（harness 自校验）。"""
+        prod_path = ROOT / "app" / "agent" / "memory" / "eval" / "datasets" / "compression_eval_prod.json"
+        dataset = json.loads(prod_path.read_text(encoding="utf-8"))
+        for script in dataset["scripts"]:
+            result = run_script(script, _constant_summarizer("固定摘要"), threshold=10, keep_recent=3)
+            late = script["facts"][-1]
+            self.assertEqual(result.n_rounds, 4, msg=script["id"])
+            self.assertTrue(
+                result.final_facts[late["id"]].in_window,
+                msg=f"{script['id']} late fact '{late['gold']}' not in window",
+            )
 
 
 if __name__ == "__main__":

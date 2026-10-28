@@ -1,0 +1,1389 @@
+{
+  "config": {
+    "dataset": "app/agent/memory/eval/datasets/compression_eval_prod.json",
+    "summarizer": "llm",
+    "threshold": 10,
+    "keep_recent": 3,
+    "max_chars": 300,
+    "out": null
+  },
+  "aggregate": {
+    "n_scripts": 3,
+    "mean_final_retention": 0.963,
+    "mean_summary_reliant_retention": 0.9583,
+    "mean_compression_ratio": 2.6438,
+    "total_rounds": 12,
+    "decay_curve": {
+      "round_1": 0.6019,
+      "round_2": 0.6806,
+      "round_3": 0.7222,
+      "round_4": 0.8009
+    }
+  },
+  "scripts": [
+    {
+      "script_id": "long_aftersale_005",
+      "n_rounds": 4,
+      "original_chars": 1324,
+      "final_summary_chars": 346,
+      "final_summary": "用户为Plus会员，订单SO202511030041购买九阳4.5L空气炸锅KL45白色款（SKU KL45-WHITE，399元，11月3日签收），因加热不均匀换货，免运费。已预约明天14:00-18:00上门取旧机，取件单号PU2025111201，取件前30分钟电话确认，可放门口无人交接；需将主机、炸篮、电源线、说明书放入原包装箱，无需外层快递盒。保修自11月3日起算一年，不因换货重算；原电子发票有效，换货后可一键重开，1个工作日内发邮箱。新机华东仓有货，全新未拆封同批次，发出前二次质检，审核通过后7天内送达并短信发物流单号。客服承诺同型号15天内出现同类质量问题可直接升级全额退款，无需二次换货。用户已准备收拾等待取件收新机。未完成追问：订单页在哪里查看换货进度，客服尚未答复。",
+      "final_window_chars": 134,
+      "final_window": [
+        {
+          "role": "assistant",
+          "content": "订单详情页底部的售后进度卡片，取件和新机物流都会实时展示。"
+        },
+        {
+          "role": "user",
+          "content": "明白了。要是取件师傅放鸽子呢？"
+        },
+        {
+          "role": "assistant",
+          "content": "若超时未取件，系统会自动为您改约下一个时段，并补偿 10 元无门槛券，放心。"
+        },
+        {
+          "role": "user",
+          "content": "好，那先这样，等你们电话。"
+        },
+        {
+          "role": "assistant",
+          "content": "好的，已为您安排妥当：明天下午取旧机、新机 7 天内送达，有问题随时来找我们。"
+        }
+      ],
+      "compression_ratio": 2.7583,
+      "retention": 1.0,
+      "summary_reliant_retention": 1.0,
+      "summary_reliant_ids": [
+        "identity",
+        "order_id",
+        "preference_white",
+        "product"
+      ],
+      "final_facts": {
+        "order_id": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "identity": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "preference_white": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "promise_delivery": {
+          "in_summary": true,
+          "in_window": true
+        },
+        "promise_pickup": {
+          "in_summary": false,
+          "in_window": true
+        },
+        "progress_ui": {
+          "in_summary": false,
+          "in_window": true
+        },
+        "late_notice": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 9,
+          "n_window": 3,
+          "summary_chars": 241,
+          "window_chars": 67,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_white": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "promise_delivery": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "progress_ui": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_notice": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.625,
+          "summary": "用户是 Plus 会员，反馈订单 SO202511030041 的九阳 4.5L 空气炸锅 KL45（399 元，11 月 3 日签收）使用一次后加热不均匀，一半熟一半生，要求处理。客服致歉并提供换货或维修方案，用户选择换货，要求优先安排，客服已登记 Plus 会员优先处理，承诺发新机并上门取回旧机、无需垫付费用。用户追加要求新机必须是白色，否则不接受。客服查询库存，白色机型 SKU 为 KL45-WHITE，有货，位于华东仓，但尚未向用户确认白色有货及后续发货、取件时间安排。",
+          "input_messages": [
+            {
+              "role": "user",
+              "content": "你好，我上周买的九阳空气炸锅用了一次就加热不均匀，一半熟一半生，订单号 SO202511030041，这得处理下。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_501",
+                  "type": "function",
+                  "function": {
+                    "name": "query_order",
+                    "arguments": "{\"order_id\": \"SO202511030041\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_501",
+              "content": "{\"order_id\": \"SO202511030041\", \"product\": \"九阳 4.5L 空气炸锅 KL45\", \"amount\": 399.0, \"status\": \"已签收\", \"delivered_at\": \"2025-11-03\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "查到您的订单：九阳 4.5L 空气炸锅 KL45，399 元，11 月 3 日签收。非常抱歉给您带来不好的体验，您可以选择换货或维修，换货会为您发一台全新同型号机器。"
+            },
+            {
+              "role": "user",
+              "content": "选换货吧。另外提醒下我是 Plus 会员，优先给我安排。"
+            },
+            {
+              "role": "assistant",
+              "content": "好的，已为您登记 Plus 会员优先处理，走换货流程：发新机加上门取回旧机，全程不需要您垫付任何费用。"
+            },
+            {
+              "role": "user",
+              "content": "新机要白色的，我家厨房电器都是白色，颜色不对我就不要了。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_502",
+                  "type": "function",
+                  "function": {
+                    "name": "check_stock",
+                    "arguments": "{\"product\": \"九阳 KL45\", \"color\": \"白色\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_502",
+              "content": "{\"sku\": \"KL45-WHITE\", \"stock\": \"有货\", \"warehouse\": \"华东仓\"}"
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 248,
+          "window_chars": 68,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "preference_white": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_delivery": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "progress_ui": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_notice": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.625,
+          "summary": "用户为 Plus 会员，订单 SO202511030041 的九阳 4.5L 空气炸锅 KL45（399 元，11 月 3 日签收）加热不均匀，已选择换货，客服登记 Plus 优先处理，新机无需垫付费用。用户要求新机必须为白色，客服确认白色款 SKU 为 KL45-WHITE，华东仓有货，审核通过后 7 天内送达并短信发送物流单号。客服已预约明天 14:00-18:00 由京东快递上门取旧机，取件单号 PU2025111201，取件前会电话联系。用户最后询问取件前需要准备什么，客服尚未回答。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "白色款 KL45 有现货，华东仓直接发出，颜色放心。"
+            },
+            {
+              "role": "user",
+              "content": "那新机多久能到？"
+            },
+            {
+              "role": "assistant",
+              "content": "审核通过后新机将在 7 天内送达您填写的地址，物流单号会短信发您。"
+            },
+            {
+              "role": "user",
+              "content": "旧机器怎么给我拿走？"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_503",
+                  "type": "function",
+                  "function": {
+                    "name": "schedule_pickup",
+                    "arguments": "{\"order_id\": \"SO202511030041\", \"date\": \"tomorrow\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_503",
+              "content": "{\"pickup_id\": \"PU2025111201\", \"slot\": \"明天 14:00-18:00\", \"courier\": \"京东快递\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您预约明天下午 14 点到 18 点上门取旧机，京东快递承运，取件前会提前电话联系您。"
+            },
+            {
+              "role": "user",
+              "content": "取件前我要准备什么？"
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 340,
+          "window_chars": 95,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_white": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_delivery": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "progress_ui": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_notice": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.625,
+          "summary": "用户为 Plus 会员，订单 SO202511030041 购买九阳 4.5L 空气炸锅 KL45 白色款（SKU KL45-WHITE，399 元，11 月 3 日签收），因加热不均匀已办理换货，Plus 会员免运费，取件和寄新机均不产生费用。客服已预约明天 14:00-18:00 京东快递上门取旧机，取件单号 PU2025111201，取件前会电话联系；用户需将主机、炸篮、电源线、说明书放入原包装箱，无需保留外层快递盒。保修延续原订单，自 11 月 3 日起算一年，不因换货重新起算；原电子发票有效，换货完成后可一键重开，1 个工作日内发至邮箱。新机白色款华东仓有货，审核通过后 7 天内送达并短信发送物流单号。用户最后追问新机若再次出现加热不均匀如何处理，客服尚未答复。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "请把炸锅主机、炸篮、电源线和说明书放进原包装箱，不需要保留外层快递盒。"
+            },
+            {
+              "role": "user",
+              "content": "换货有运费吗？"
+            },
+            {
+              "role": "assistant",
+              "content": "Plus 会员换货免运费，取件和寄新机都不产生费用。"
+            },
+            {
+              "role": "user",
+              "content": "新机的保修从哪天开始算？"
+            },
+            {
+              "role": "assistant",
+              "content": "保修延续原订单，从您 11 月 3 日签收起算一年，不会因为换货重新起算。"
+            },
+            {
+              "role": "user",
+              "content": "发票有影响吗？我开过电子发票了。"
+            },
+            {
+              "role": "assistant",
+              "content": "没有影响，原电子发票有效；如需按新机重开，可在换货完成后一键重开，1 个工作日内发送到邮箱。"
+            },
+            {
+              "role": "user",
+              "content": "如果新机拿回来又加热不均匀怎么办？"
+            }
+          ]
+        },
+        {
+          "round": 4,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 346,
+          "window_chars": 82,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_white": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_delivery": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "progress_ui": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "late_notice": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.75,
+          "summary": "用户为Plus会员，订单SO202511030041购买九阳4.5L空气炸锅KL45白色款（SKU KL45-WHITE，399元，11月3日签收），因加热不均匀换货，免运费。已预约明天14:00-18:00上门取旧机，取件单号PU2025111201，取件前30分钟电话确认，可放门口无人交接；需将主机、炸篮、电源线、说明书放入原包装箱，无需外层快递盒。保修自11月3日起算一年，不因换货重算；原电子发票有效，换货后可一键重开，1个工作日内发邮箱。新机华东仓有货，全新未拆封同批次，发出前二次质检，审核通过后7天内送达并短信发物流单号。客服承诺同型号15天内出现同类质量问题可直接升级全额退款，无需二次换货。用户已准备收拾等待取件收新机。未完成追问：订单页在哪里查看换货进度，客服尚未答复。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "同型号 15 天内出现同类质量问题，可直接升级为全额退款，不需要二次换货。"
+            },
+            {
+              "role": "user",
+              "content": "行，那我把东西先收拾出来。取件师傅会提前联系吧？"
+            },
+            {
+              "role": "assistant",
+              "content": "会的，取件前 30 分钟电话确认，您把包装好放在门口也可以无人交接。"
+            },
+            {
+              "role": "user",
+              "content": "新机是全新未拆封的吧？"
+            },
+            {
+              "role": "assistant",
+              "content": "是的，全新未拆封官方正品，与您原订单同批次货源，发出前会做二次质检。"
+            },
+            {
+              "role": "user",
+              "content": "那我这两天不用做别的了吧？"
+            },
+            {
+              "role": "assistant",
+              "content": "您只需在家等取件和收新机，其他流程系统自动推进，换货完成后订单页状态会更新。"
+            },
+            {
+              "role": "user",
+              "content": "订单页哪里能看到进度？"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "script_id": "long_vip_006",
+      "n_rounds": 4,
+      "original_chars": 1252,
+      "final_summary_chars": 299,
+      "final_summary": "用户为钻石会员，购买戴森吹风机HD08，订单号SO202511070055，金额3299元，双11活动订单，已备注顺丰承运。客服已加急并承诺当晚24点前发出，登记发货超时投诉工单CP2025111203，承诺专员2小时内电话联系；超时补偿100元无门槛优惠券已审核通过，2小时内到账，可在账户卡券包查看。电子发票将在发货后自动开具并发送至下单预留邮箱。用户原收货地址写错，客服已成功修改为朝阳区办公室地址，发货前修改有效。用户要求送人包装美观，客服已备注礼品级包装，出库时加固并附贺卡。物流可在发货后通过订单页查看轨迹，并会短信通知单号。用户追问钻石会员生日月双倍积分本订单是否计入，客服尚未答复。",
+      "final_window_chars": 164,
+      "final_window": [
+        {
+          "role": "assistant",
+          "content": "生日月下单享双倍积分，本单 3299 元可获 6598 积分，发货完成后入账。"
+        },
+        {
+          "role": "user",
+          "content": "那还挺划算。积分能干嘛？"
+        },
+        {
+          "role": "assistant",
+          "content": "可兑换优惠券、赠品或会员日活动礼品，钻石会员兑换享 9 折。"
+        },
+        {
+          "role": "user",
+          "content": "行，知道了。今晚发货后给我发个短信。"
+        },
+        {
+          "role": "assistant",
+          "content": "一定，发出后第一时间短信通知您单号和物流链接。"
+        },
+        {
+          "role": "user",
+          "content": "好，麻烦尽快，等着送人呢。"
+        },
+        {
+          "role": "assistant",
+          "content": "理解您的着急，已多方加急，今晚 24 点前发出，请您放心。"
+        }
+      ],
+      "compression_ratio": 2.7041,
+      "retention": 1.0,
+      "summary_reliant_retention": 1.0,
+      "summary_reliant_ids": [
+        "address_change",
+        "compensation",
+        "order_id",
+        "preference_sf",
+        "product"
+      ],
+      "final_facts": {
+        "order_id": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "identity": {
+          "in_summary": true,
+          "in_window": true
+        },
+        "promise_tonight": {
+          "in_summary": false,
+          "in_window": true
+        },
+        "compensation": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "preference_sf": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "address_change": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "late_points": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 9,
+          "n_window": 3,
+          "summary_chars": 195,
+          "window_chars": 47,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_tonight": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "compensation": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "address_change": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_points": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.625,
+          "summary": "用户为钻石会员，反馈 11 月 7 日购买戴森吹风机 HD08 至今未发货，订单号 SO202511070055，金额 3299 元，订单状态为待发货，购买时参加双 11 活动。用户表示享有优先发货权益，且急用于送人。客服已核实钻石会员身份，为订单加急标记并安排仓库优先拣货，同时已向仓库催单，仓库反馈预计今晚 24 点前发出。用户尚未回应此预计时间是否可接受，客服需跟进订单是否按时发出。",
+          "input_messages": [
+            {
+              "role": "user",
+              "content": "你好，我 11 月 7 号买的戴森吹风机 HD08 到现在还没发货，订单号 SO202511070055，双 11 活动买的。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_601",
+                  "type": "function",
+                  "function": {
+                    "name": "query_order",
+                    "arguments": "{\"order_id\": \"SO202511070055\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_601",
+              "content": "{\"order_id\": \"SO202511070055\", \"product\": \"Dyson Supersonic HD08 吹风机\", \"amount\": 3299.0, \"status\": \"待发货\", \"paid_at\": \"2025-11-07\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "查到您的订单目前还是待发货状态，确实已经超出 48 小时的发货时效，非常抱歉。"
+            },
+            {
+              "role": "user",
+              "content": "我是钻石会员，享优先发货权益的，这说不过去吧。"
+            },
+            {
+              "role": "assistant",
+              "content": "已核实您的钻石会员身份，为订单加急标记，仓库优先拣货。"
+            },
+            {
+              "role": "user",
+              "content": "到底什么时候能发出去？我等着送人，很急。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_602",
+                  "type": "function",
+                  "function": {
+                    "name": "urge_warehouse",
+                    "arguments": "{\"order_id\": \"SO202511070055\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_602",
+              "content": "{\"urged\": true, \"eta\": \"今晚 24 点前\"}"
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 214,
+          "window_chars": 126,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_tonight": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "compensation": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "preference_sf": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "address_change": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_points": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.75,
+          "summary": "用户是钻石会员，购买戴森吹风机 HD08，订单号 SO202511070055，金额 3299 元，双 11 活动订单，此前已加急并承诺今晚 24 点前发出。用户本次要求必须发顺丰，普通快递拒收，客服已备注顺丰承运。用户表示若今晚未发出将投诉，客服已登记发货超时投诉工单 CP2025111203，承诺客服专员 2 小时内电话联系。用户随后追问超时赔付问题，客服尚未答复，需说明超时赔偿方案并跟进订单是否按时发出及是否使用顺丰。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "已为您催仓库加急，今晚 24 点前一定发出。"
+            },
+            {
+              "role": "user",
+              "content": "发顺丰啊，普通快递我不收。"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您备注顺丰快递承运。"
+            },
+            {
+              "role": "user",
+              "content": "要是今晚发不出来，我就要投诉了。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_603",
+                  "type": "function",
+                  "function": {
+                    "name": "register_complaint",
+                    "arguments": "{\"order_id\": \"SO202511070055\", \"type\": \"发货超时\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_603",
+              "content": "{\"complaint_id\": \"CP2025111203\", \"callback_sla\": \"2 小时\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您登记投诉工单，客服专员 2 小时内会电话联系您。"
+            },
+            {
+              "role": "user",
+              "content": "投诉归投诉，超时该赔的得赔吧。"
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 270,
+          "window_chars": 111,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_tonight": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "compensation": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "address_change": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "late_points": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.875,
+          "summary": "用户为钻石会员，购买戴森吹风机 HD08，订单号 SO202511070055，金额 3299 元，双 11 活动订单，要求必须发顺丰，已备注顺丰承运；客服已加急承诺今晚 24 点前发出，并登记发货超时投诉工单 CP2025111203，承诺专员 2 小时内电话联系。客服已申请超时补偿并审核通过，将发放 100 元无门槛优惠券，2 小时内到账，可于账户卡券包查看，全品类无门槛使用。用户要求开具电子发票，客服答复发货后自动开具并发送至下单预留邮箱。用户提出收货地址写错，需改为公司在朝阳区的办公室，客服尚未答复，待确认可否改址及具体流程。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_604",
+                  "type": "function",
+                  "function": {
+                    "name": "apply_compensation",
+                    "arguments": "{\"order_id\": \"SO202511070055\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_604",
+              "content": "{\"approved\": true, \"coupon\": \"100 元无门槛券\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您申请超时补偿，审核已通过，100 元无门槛优惠券将发放到您的账户。"
+            },
+            {
+              "role": "user",
+              "content": "券什么时候到账？"
+            },
+            {
+              "role": "assistant",
+              "content": "2 小时内到账，可在账户卡券包查看，全品类无门槛使用。"
+            },
+            {
+              "role": "user",
+              "content": "行。发票记得给我开电子的。"
+            },
+            {
+              "role": "assistant",
+              "content": "发货后电子发票自动开具，发送到您下单预留的邮箱。"
+            },
+            {
+              "role": "user",
+              "content": "对了，收货地址写错了，能改吗？改成我公司在朝阳区的办公室。"
+            }
+          ]
+        },
+        {
+          "round": 4,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 299,
+          "window_chars": 81,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "promise_tonight": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "compensation": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "address_change": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "late_points": {
+              "in_summary": false,
+              "in_window": true
+            }
+          },
+          "retention": 0.875,
+          "summary": "用户为钻石会员，购买戴森吹风机HD08，订单号SO202511070055，金额3299元，双11活动订单，已备注顺丰承运。客服已加急并承诺当晚24点前发出，登记发货超时投诉工单CP2025111203，承诺专员2小时内电话联系；超时补偿100元无门槛优惠券已审核通过，2小时内到账，可在账户卡券包查看。电子发票将在发货后自动开具并发送至下单预留邮箱。用户原收货地址写错，客服已成功修改为朝阳区办公室地址，发货前修改有效。用户要求送人包装美观，客服已备注礼品级包装，出库时加固并附贺卡。物流可在发货后通过订单页查看轨迹，并会短信通知单号。用户追问钻石会员生日月双倍积分本订单是否计入，客服尚未答复。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_605",
+                  "type": "function",
+                  "function": {
+                    "name": "update_address",
+                    "arguments": "{\"order_id\": \"SO202511070055\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_605",
+              "content": "{\"updated\": true, \"address\": \"朝阳区办公室\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您修改收货地址为朝阳区办公室地址，发货前修改均有效。"
+            },
+            {
+              "role": "user",
+              "content": "吹风机送人包装要好看点，别拿个破箱子装。"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您备注礼品级包装，出库时会加固并附贺卡。"
+            },
+            {
+              "role": "user",
+              "content": "发货了我怎么看物流？"
+            },
+            {
+              "role": "assistant",
+              "content": "发货后订单页实时显示物流轨迹，也会短信通知您单号。"
+            },
+            {
+              "role": "user",
+              "content": "钻石会员生日月不是有双倍积分吗？我这个订单算吗？"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "script_id": "long_b2b_007",
+      "n_rounds": 4,
+      "original_chars": 1437,
+      "final_summary_chars": 367,
+      "final_summary": "云启科技有限公司采购极米H6投影仪5台，订单号SO202511100088，金额19950元；因缺3个遥控器已登记工单MS2025111302，承诺48小时内顺丰包邮补发。安装调试预约本周五09:00-12:00上门，工程师提前一天电话确认，大宗采购免费安装，吊装支架另计。增值税专票抬头云启科技有限公司，税号91310110MA1K35XX7B，地址电话、开户行账号待行政下午补发，资料齐全后24小时内开票并邮寄。质保整机3年、光源2年，H6为LED光源，标称寿命30000小时。用户拟再采购3台，客服报价单价3890元，享95折批量优惠，含票含运费，报价7天有效；复购客户可申请赠3年延保，延保在原3年质保基础上顺延，不冲突，期间同样上门维修。用户认可并要正式报价单PDF走流程，客服待发送，用户将把报价发采购群讨论，结果待跟进。",
+      "final_window_chars": 215,
+      "final_window": [
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_706",
+              "type": "function",
+              "function": {
+                "name": "send_quotation",
+                "arguments": "{\"email\": \"purchase@yunqi.com\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_706",
+          "content": "{\"sent\": true, \"email\": \"purchase@yunqi.com\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "报价单已发送到 purchase@yunqi.com，请注意查收。"
+        },
+        {
+          "role": "user",
+          "content": "收到。遥控器补发单号出来记得发我。"
+        },
+        {
+          "role": "assistant",
+          "content": "补发发出后单号会第一时间同步给您和您的行政联系人。"
+        },
+        {
+          "role": "user",
+          "content": "好，那先这样，等你们安排。"
+        },
+        {
+          "role": "assistant",
+          "content": "感谢您的支持，补发、安装、开票三项进度都会短信同步，有问题随时联系我们。"
+        }
+      ],
+      "compression_ratio": 2.4691,
+      "retention": 0.8889,
+      "summary_reliant_retention": 0.875,
+      "summary_reliant_ids": [
+        "company",
+        "invoice_type",
+        "order_id",
+        "product",
+        "promise_install",
+        "promise_remote",
+        "quote",
+        "warranty"
+      ],
+      "final_facts": {
+        "order_id": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "company": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "promise_remote": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "promise_install": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "invoice_type": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "warranty": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "quote": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "late_progress": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 9,
+          "n_window": 3,
+          "summary_chars": 181,
+          "window_chars": 120,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "company": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_remote": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_install": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "invoice_type": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "quote": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_progress": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.5556,
+          "summary": "云启科技有限公司采购极米 H6 投影仪 5 台，订单号 SO202511100088，金额 19950 元，已签收，但只收到 2 个遥控器，缺 3 个；机器未拆封。客服已致歉并登记补发工单 MS2025111302，承诺 3 个遥控器 48 小时内顺丰包邮补发。用户随后询问投影仪是否需要上门安装调试，称行政人员不熟悉操作，客服尚未回复，需继续跟进安装调试安排。",
+          "input_messages": [
+            {
+              "role": "user",
+              "content": "你好，云启科技有限公司上周采购的 5 台极米投影仪到货了，但只有 2 个遥控器，订单号 SO202511100088。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_701",
+                  "type": "function",
+                  "function": {
+                    "name": "query_order",
+                    "arguments": "{\"order_id\": \"SO202511100088\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_701",
+              "content": "{\"order_id\": \"SO202511100088\", \"product\": \"极米 H6 投影仪 x5\", \"amount\": 19950.0, \"status\": \"已签收\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "查到订单：极米 H6 投影仪 5 台、19950 元，已签收。非常抱歉遥控器缺失，马上为您登记补发。"
+            },
+            {
+              "role": "user",
+              "content": "缺 3 个遥控器，机器本身没拆封，应该没问题。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_702",
+                  "type": "function",
+                  "function": {
+                    "name": "register_missing",
+                    "arguments": "{\"order_id\": \"SO202511100088\", \"item\": \"遥控器\", \"qty\": 3}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_702",
+              "content": "{\"ticket\": \"MS2025111302\", \"reship_sla\": \"48 小时\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已登记补发工单，3 个遥控器将在 48 小时内补发，顺丰包邮。"
+            },
+            {
+              "role": "user",
+              "content": "投影仪还需要上门安装调试吗？我们行政不怎么会弄。"
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 265,
+          "window_chars": 97,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "company": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_remote": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_install": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "invoice_type": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "quote": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_progress": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.6667,
+          "summary": "云启科技有限公司采购极米 H6 投影仪 5 台，订单号 SO202511100088，金额 19950 元，已签收但仅收到 2 个遥控器，缺 3 个，机器未拆封。客服已致歉并登记补发工单 MS2025111302，承诺 3 个遥控器 48 小时内顺丰包邮补发。用户询问安装调试，客服已预约本周五 09:00-12:00 上门安装调试 5 台，工程师提前一天电话确认。用户问是否收费，客服答复大宗采购含免费上门安装，吊装支架另计，可现场询价，用户认可。用户要求开增值税专票，抬头云启科技有限公司，客服已登记，承诺 24 小时内处理。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_703",
+                  "type": "function",
+                  "function": {
+                    "name": "book_install",
+                    "arguments": "{\"order_id\": \"SO202511100088\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_703",
+              "content": "{\"booked\": true, \"slot\": \"本周五 09:00-12:00\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您预约本周五上午上门安装调试 5 台，工程师会提前一天电话确认。"
+            },
+            {
+              "role": "user",
+              "content": "安装收费吗？"
+            },
+            {
+              "role": "assistant",
+              "content": "大宗采购订单含免费上门安装，投影仪吊装支架另计，如需可现场询价。"
+            },
+            {
+              "role": "user",
+              "content": "好。发票要开增值税专票，抬头：云启科技有限公司。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_704",
+                  "type": "function",
+                  "function": {
+                    "name": "record_invoice",
+                    "arguments": "{\"title\": \"云启科技有限公司\", \"type\": \"专票\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_704",
+              "content": "{\"recorded\": true, \"deadline\": \"24 小时\"}"
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 313,
+          "window_chars": 147,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "company": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_remote": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_install": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "invoice_type": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "quote": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "late_progress": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.6667,
+          "summary": "云启科技有限公司采购极米 H6 投影仪 5 台，订单号 SO202511100088，金额 19950 元；因缺 3 个遥控器，已登记工单 MS2025111302，承诺 48 小时内顺丰包邮补发。安装调试预约本周五 09:00-12:00 上门，工程师提前一天电话确认，大宗采购免费安装，吊装支架另计。增值税专票抬头云启科技有限公司，用户已提供税号 91310110MA1K35XX7B，其余地址电话、开户行账号下午由行政补发，资料齐全后 24 小时内开票并邮寄公司地址。质保答复整机 3 年、光源 2 年，H6 为 LED 光源标称寿命 30000 小时。用户表示公司拟再采购 3 台并要求报价，客服尚未回复，待跟进报价。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "已记录专票抬头，请补全税号、地址电话、开户行账号，收到后 24 小时内开出。"
+            },
+            {
+              "role": "user",
+              "content": "税号 91310110MA1K35XX7B，其他的下午行政发你。"
+            },
+            {
+              "role": "assistant",
+              "content": "已记录税号，等待完整资料后开票，专票会邮寄到公司地址。"
+            },
+            {
+              "role": "user",
+              "content": "投影仪质保多久？"
+            },
+            {
+              "role": "assistant",
+              "content": "整机 3 年质保，灯泡光源单独 2 年，非人为损坏免费上门维修。"
+            },
+            {
+              "role": "user",
+              "content": "我们会议室用得频繁，灯泡寿命怎么样？"
+            },
+            {
+              "role": "assistant",
+              "content": "H6 用的是 LED 光源，标称寿命 30000 小时，日常会议室使用足够。"
+            },
+            {
+              "role": "user",
+              "content": "行。另外公司还想再采购 3 台，能报个价吗？"
+            }
+          ]
+        },
+        {
+          "round": 4,
+          "n_compressed": 10,
+          "n_window": 3,
+          "summary_chars": 367,
+          "window_chars": 124,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "company": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_remote": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_install": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "invoice_type": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "quote": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "late_progress": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.7778,
+          "summary": "云启科技有限公司采购极米H6投影仪5台，订单号SO202511100088，金额19950元；因缺3个遥控器已登记工单MS2025111302，承诺48小时内顺丰包邮补发。安装调试预约本周五09:00-12:00上门，工程师提前一天电话确认，大宗采购免费安装，吊装支架另计。增值税专票抬头云启科技有限公司，税号91310110MA1K35XX7B，地址电话、开户行账号待行政下午补发，资料齐全后24小时内开票并邮寄。质保整机3年、光源2年，H6为LED光源，标称寿命30000小时。用户拟再采购3台，客服报价单价3890元，享95折批量优惠，含票含运费，报价7天有效；复购客户可申请赠3年延保，延保在原3年质保基础上顺延，不冲突，期间同样上门维修。用户认可并要正式报价单PDF走流程，客服待发送，用户将把报价发采购群讨论，结果待跟进。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_705",
+                  "type": "function",
+                  "function": {
+                    "name": "quote_bulk",
+                    "arguments": "{\"product\": \"极米 H6\", \"qty\": 3}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_705",
+              "content": "{\"unit_price\": 3890.0, \"discount\": \"批量 95 折\", \"valid_days\": 7}"
+            },
+            {
+              "role": "assistant",
+              "content": "3 台批量采购单价 3890 元，享 95 折批量优惠，报价 7 天内有效，含票含运费。"
+            },
+            {
+              "role": "user",
+              "content": "比我们上次买的单价低啊。"
+            },
+            {
+              "role": "assistant",
+              "content": "对，本季度有企业采购让利活动，复购客户还可以再申请赠 3 年延保。"
+            },
+            {
+              "role": "user",
+              "content": "延保怎么算？跟质保冲突吗？"
+            },
+            {
+              "role": "assistant",
+              "content": "不冲突，延保在原 3 年质保基础上顺延，期间同样享受上门维修。"
+            },
+            {
+              "role": "user",
+              "content": "那挺合适，我把报价发采购群讨论下。"
+            },
+            {
+              "role": "assistant",
+              "content": "好的，需要正式报价单 PDF 的话我可以现在发您邮箱。"
+            },
+            {
+              "role": "user",
+              "content": "发一份吧，公司走流程要用。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
