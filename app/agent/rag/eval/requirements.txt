@@ -1,4 +1,4 @@
-# Suggested compatible baseline for the legacy evaluate() API used in run_eval.py
-ragas==0.2.15
-datasets>=2.19,<4
-pandas>=2.2
+# 生成层评测已改为自写 LLM judge（app/agent/rag/eval/judge.py），
+# 每题 2 次调用、仅依赖主 requirements 的 openai SDK，无额外依赖。
+# 历史：ragas 0.4 依赖链（datasets>=4 → pyarrow 26 → numpy>=2）与
+# 本地 bge 栈（torch 2.2.2 + numpy 1.26 ABI 锁定）冲突，于 2026-10-28 移除。

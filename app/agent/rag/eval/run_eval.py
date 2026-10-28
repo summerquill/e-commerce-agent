@@ -6,12 +6,13 @@ Features:
 - Calls a project-specific adapter to retrieve chunks and generate answers.
 - Computes deterministic retrieval metrics from expected_chunk_ids:
   Hit@K, Recall@K, Precision@K, MRR@K.
-- Optionally runs Ragas (pinned to the 0.2.x API in requirements.txt).
+- Optionally runs LLM judge (faithfulness + answer_correctness, 自写实现，
+  替代 ragas——依赖链与本地 bge 栈冲突，见 judge.py docstring).
 - Saves per-case traces and aggregate metrics.
 
 Usage:
   python -m evals.run_eval --dataset evals/datasets/rag_eval.json --top-k 5
-  python -m evals.run_eval --dataset evals/datasets/rag_eval.json --top-k 5 --with-ragas
+  python -m evals.run_eval --dataset evals/datasets/rag_eval.json --top-k 5 --with-judge
 
 Before running:
   Implement evals/rag_adapter.py to connect retrieve() and generate() to your project.
@@ -27,7 +28,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .rag_adapter import retrieve, generate
+from .rag_adapter import retrieve, generate, judge_answer
 
 
 def _chunk_id(item: Any) -> str:
@@ -129,20 +130,27 @@ def run_eval(
     dataset_path: Path,
     output_dir: Path,
     top_k: int,
-    with_ragas: bool,
+    with_judge: bool = False,
     no_judge: bool = False,
 ) -> None:
     cases = load_dataset(dataset_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    from app.config.settings import settings
+    print(
+        f"[config] model={settings.model_name} retrieval_mode={settings.retrieval_mode} "
+        f"top_k={top_k} cases={len(cases)} with_judge={with_judge}",
+        flush=True,
+    )
+
     traces: list[dict[str, Any]] = []
-    ragas_rows: list[dict[str, Any]] = []
 
     for case in cases:
         case_id = case["id"]
         query = case["query"]
         expected_ids = [str(x) for x in case.get("expected_chunk_ids", [])]
 
+        print(f"[{case_id}] retrieving...", flush=True)
         started = time.perf_counter()
         retrieved = retrieve(query, top_k=top_k)
         retrieval_latency_ms = (time.perf_counter() - started) * 1000
@@ -153,6 +161,7 @@ def run_eval(
         answer: str | None = None
         generation_latency_ms: float | None = None
         if not no_judge:
+            print(f"[{case_id}] generating...", flush=True)
             started = time.perf_counter()
             answer = generate(query, contexts)
             generation_latency_ms = (time.perf_counter() - started) * 1000
@@ -175,20 +184,24 @@ def run_eval(
         }
         if not no_judge and generation_latency_ms is not None:
             trace["generation_latency_ms"] = round(generation_latency_ms, 2)
-        traces.append(trace)
 
         if (
-            not no_judge
-            and answer is not None
+            with_judge and not no_judge and answer is not None
             and case.get("answerable", True)
-            and case.get("reference")
+            and not answer.startswith("（生成失败")
         ):
-            ragas_rows.append({
-                "question": query,
-                "answer": answer,
-                "contexts": contexts,
-                "ground_truth": case["reference"],
-            })
+            print(f"[{case_id}] judging...", flush=True)
+            started = time.perf_counter()
+            judge = judge_answer(
+                question=query,
+                answer=answer,
+                contexts=contexts,
+                reference=case.get("reference"),
+            )
+            judge_latency_ms = (time.perf_counter() - started) * 1000
+            trace["judge"] = judge
+            trace["judge_latency_ms"] = round(judge_latency_ms, 2)
+        traces.append(trace)
 
         gen_label = (
             f"generate={generation_latency_ms:.0f}ms"
@@ -236,51 +249,24 @@ def run_eval(
         + (["--no-judge 已启用：跳过 generate 调用与生成层评测。"] if no_judge else []),
     }
 
-    if with_ragas:
-        try:
-            from datasets import Dataset
-            from ragas import evaluate
-            from ragas.metrics import (
-                context_precision,
-                context_recall,
-                faithfulness,
-                answer_correctness,
-            )
-        except ImportError as exc:
-            raise RuntimeError(
-                "Ragas dependencies missing. Install requirements.txt or run without --with-ragas."
-            ) from exc
+    if with_judge:
+        faith = [t.get("judge", {}).get("faithfulness") for t in traces]
 
-        if not ragas_rows:
-            print("No answerable cases with reference answers; skipping Ragas.")
-        else:
-            result = evaluate(
-                Dataset.from_list(ragas_rows),
-                metrics=[
-                    context_precision,
-                    context_recall,
-                    faithfulness,
-                    answer_correctness,
-                ],
-            )
-            # Ragas 0.2.x EvaluationResult supports to_pandas().
-            try:
-                ragas_df = result.to_pandas()
-                ragas_df.to_csv(output_dir / "ragas_per_case.csv", index=False)
-                summary["ragas"] = {
-                    str(column): (
-                        round(float(ragas_df[column].dropna().mean()), 4)
-                        if not ragas_df[column].dropna().empty else None
-                    )
-                    for column in ragas_df.columns
-                    if column in {
-                        "context_precision", "context_recall",
-                        "faithfulness", "answer_correctness"
-                    }
-                }
-            except Exception:
-                summary["ragas"] = {"raw_result": str(result)}
-            print("Ragas evaluation completed.")
+        def _corr_score(t: dict[str, Any]) -> float | None:
+            c = t.get("judge", {}).get("correctness")
+            return c.get("score") if isinstance(c, dict) else None
+
+        corr = [_corr_score(t) for t in traces]
+        summary["judge"] = {
+            "faithfulness_mean": safe_mean(faith),
+            "answer_correctness_mean": safe_mean(corr),
+            "judge_case_count": sum(f is not None for f in faith),
+            "failed_case_count": sum(
+                t.get("judge") is not None and t["judge"].get("faithfulness") is None
+                for t in traces
+            ),
+        }
+        print("LLM judge evaluation completed.")
 
     summary_path = output_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -294,7 +280,7 @@ def main() -> None:
     parser.add_argument("--dataset", default="evals/datasets/rag_eval.json")
     parser.add_argument("--output-dir", default="evals/results/baseline")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--with-ragas", action="store_true")
+    parser.add_argument("--with-judge", action="store_true")
     parser.add_argument(
         "--no-judge",
         action="store_true",
@@ -309,7 +295,7 @@ def main() -> None:
         Path(args.dataset),
         Path(args.output_dir),
         args.top_k,
-        args.with_ragas,
+        args.with_judge,
         args.no_judge,
     )
 

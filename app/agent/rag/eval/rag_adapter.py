@@ -14,6 +14,7 @@ Each retrieved item must expose a stable chunk ID, ideally in metadata["chunk_id
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from openai import OpenAI  # noqa: E402
 
+from app.agent.rag.eval.judge import judge_correctness, judge_faithfulness  # noqa: E402
 from app.agent.tools.knowledge import _get_retriever  # noqa: E402
 from app.config.settings import settings  # noqa: E402
 from scripts.eval_rag import _generate_answer  # noqa: E402
@@ -32,12 +34,18 @@ _client: OpenAI | None = None
 
 
 def _get_client() -> OpenAI:
-    """复用 settings 的 OpenAI 配置，进程内只创建一次。"""
+    """复用 settings 的 OpenAI 配置，进程内只创建一次。
+
+    timeout=60：防单次调用挂起几分钟（SDK 默认 600s）；
+    max_retries=0：关掉 SDK 内置重试，重试统一由上层控制，避免静默叠加。
+    """
     global _client
     if _client is None:
         _client = OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
+            timeout=60.0,
+            max_retries=0,
         )
     return _client
 
@@ -69,9 +77,37 @@ def generate(query: str, contexts: list[str]) -> str:
 
     contexts 只携带文本，没有 chunk_id，这里用 ctx_N 作占位标识；
     生成阶段只需要文本内容，不影响答案。
+    free 模型限流（429）常见：失败退避重试 3 次。
     """
     context_dicts = [
         {"chunk_id": f"ctx_{i + 1}", "text": text}
         for i, text in enumerate(contexts)
     ]
-    return _generate_answer(_get_client(), settings.model_name, query, context_dicts)
+    for attempt, delay in enumerate((0, 5, 10, 20)):
+        if delay:
+            print(f"[generate] 失败，{delay}s 后重试 (attempt {attempt + 1}/3)", flush=True)
+            time.sleep(delay)
+        answer = _generate_answer(_get_client(), settings.model_name, query, context_dicts)
+        if not answer.startswith("（生成失败"):
+            return answer
+        print(f"[generate] 响应: {answer[:120]}", flush=True)
+        if attempt == 3:
+            return answer
+    return answer
+
+
+def judge_answer(question: str, answer: str, contexts: list[str], reference: str | None) -> dict[str, Any]:
+    """judge 层入口：faithfulness 必跑，reference 存在时追加 correctness。"""
+    client = _get_client()
+    result: dict[str, Any] = {
+        "faithfulness": judge_faithfulness(
+            client, settings.model_name,
+            question=question, answer=answer, contexts=contexts,
+        )
+    }
+    if reference:
+        result["correctness"] = judge_correctness(
+            client, settings.model_name,
+            question=question, answer=answer, reference=reference,
+        )
+    return result
