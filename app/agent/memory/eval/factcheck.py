@@ -46,17 +46,31 @@ def message_text(msg: dict) -> str:
     return "\n".join(p for p in parts if p)
 
 
+def _normalize(text: str) -> str:
+    """去除全部空白字符后再匹配。
+
+    根因（LLM 基线实测发现）：摘要器重写时常增删数字/标点两侧空格
+    （如「100 元无门槛」→「100元无门槛」），逐字面子串匹配会漏报。
+    实体匹配必须对空白不敏感，否则度量本身失真。
+    """
+    return "".join(text.split())
+
+
 def check_facts(
     facts: list[Fact],
     summary: str | None,
     window_messages: list[dict],
 ) -> dict[str, FactState]:
-    """检查每个事实在（摘要 ∪ 保留窗口）中是否仍可检索到。"""
-    window_text = "\n".join(message_text(m) for m in window_messages)
+    """检查每个事实在（摘要 ∪ 保留窗口）中是否仍可检索到（空白不敏感）。"""
+    summary_norm = _normalize(summary or "")
+    window_norm = _normalize(
+        "\n".join(message_text(m) for m in window_messages)
+    )
     states: dict[str, FactState] = {}
     for fact in facts:
+        gold_norm = _normalize(fact.gold)
         states[fact.id] = FactState(
-            in_summary=bool(summary) and fact.gold in summary,
-            in_window=fact.gold in window_text,
+            in_summary=bool(summary) and gold_norm in summary_norm,
+            in_window=gold_norm in window_norm,
         )
     return states
