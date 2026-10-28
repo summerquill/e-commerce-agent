@@ -1,0 +1,563 @@
+{
+  "config": {
+    "dataset": "/Users/liululu/hello-agents/ecom-service-agent/app/agent/memory/eval/datasets/compression_eval.json",
+    "summarizer": "truncate",
+    "threshold": 4,
+    "keep_recent": 2,
+    "max_chars": 300,
+    "out": null
+  },
+  "aggregate": {
+    "n_scripts": 4,
+    "mean_final_retention": 0.7536,
+    "mean_summary_reliant_retention": 0.6875,
+    "mean_compression_ratio": 1.7048,
+    "total_rounds": 11,
+    "decay_curve": {
+      "round_1": 0.6238,
+      "round_2": 0.6798,
+      "round_3": 0.6238
+    }
+  },
+  "scripts": [
+    {
+      "script_id": "ret_flow_001",
+      "n_rounds": 3,
+      "original_chars": 542,
+      "final_summary_chars": 260,
+      "final_window_chars": 36,
+      "compression_ratio": 1.8311,
+      "retention": 0.8,
+      "summary_reliant_retention": 0.75,
+      "summary_reliant_ids": [
+        "order_id",
+        "product",
+        "promise_pickup",
+        "promise_refund"
+      ],
+      "final_facts": {
+        "order_id": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "promise_pickup": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "promise_refund": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "notice_channel": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 300,
+          "window_chars": 73,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "promise_refund": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "notice_channel": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.6
+        },
+        {
+          "round": 2,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 278,
+          "window_chars": 44,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_refund": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "notice_channel": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.8
+        },
+        {
+          "round": 3,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 260,
+          "window_chars": 36,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_pickup": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "promise_refund": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "notice_channel": {
+              "in_summary": false,
+              "in_window": true
+            }
+          },
+          "retention": 0.8
+        }
+      ]
+    },
+    {
+      "script_id": "ship_delay_002",
+      "n_rounds": 3,
+      "original_chars": 522,
+      "final_summary_chars": 253,
+      "final_window_chars": 31,
+      "compression_ratio": 1.838,
+      "retention": 0.5,
+      "summary_reliant_retention": 0.4,
+      "summary_reliant_ids": [
+        "compensation",
+        "identity",
+        "order_id",
+        "product",
+        "promise_expedite"
+      ],
+      "final_facts": {
+        "order_id": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "identity": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "promise_expedite": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "compensation": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "notify": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 300,
+          "window_chars": 68,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "promise_expedite": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "compensation": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.6667
+        },
+        {
+          "round": 2,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 290,
+          "window_chars": 45,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_expedite": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "compensation": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.8333
+        },
+        {
+          "round": 3,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 253,
+          "window_chars": 31,
+          "facts": {
+            "order_id": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "identity": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "promise_expedite": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "compensation": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": true
+            }
+          },
+          "retention": 0.5
+        }
+      ]
+    },
+    {
+      "script_id": "pref_003",
+      "n_rounds": 2,
+      "original_chars": 476,
+      "final_summary_chars": 287,
+      "final_window_chars": 92,
+      "compression_ratio": 1.2559,
+      "retention": 1.0,
+      "summary_reliant_retention": 1.0,
+      "summary_reliant_ids": [
+        "budget",
+        "delivery",
+        "product"
+      ],
+      "final_facts": {
+        "preference_red": {
+          "in_summary": true,
+          "in_window": true
+        },
+        "budget": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "delivery": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "product": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "aftercare": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 290,
+          "window_chars": 66,
+          "facts": {
+            "preference_red": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "budget": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "delivery": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "aftercare": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.8
+        },
+        {
+          "round": 2,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 287,
+          "window_chars": 53,
+          "facts": {
+            "preference_red": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "budget": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "delivery": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "product": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "aftercare": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.8
+        }
+      ]
+    },
+    {
+      "script_id": "b2b_004",
+      "n_rounds": 3,
+      "original_chars": 786,
+      "final_summary_chars": 300,
+      "final_window_chars": 115,
+      "compression_ratio": 1.894,
+      "retention": 0.7143,
+      "summary_reliant_retention": 0.6,
+      "summary_reliant_ids": [
+        "company",
+        "invoice_type",
+        "order_1",
+        "order_2",
+        "promise_parts"
+      ],
+      "final_facts": {
+        "order_1": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "order_2": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "company": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "promise_parts": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "invoice_type": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "warranty": {
+          "in_summary": false,
+          "in_window": true
+        },
+        "notify": {
+          "in_summary": false,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 5,
+          "n_window": 3,
+          "summary_chars": 300,
+          "window_chars": 220,
+          "facts": {
+            "order_1": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_2": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "company": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "promise_parts": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "invoice_type": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.4286
+        },
+        {
+          "round": 2,
+          "n_compressed": 3,
+          "n_window": 2,
+          "summary_chars": 300,
+          "window_chars": 48,
+          "facts": {
+            "order_1": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_2": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "company": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "promise_parts": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "invoice_type": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.2857
+        },
+        {
+          "round": 3,
+          "n_compressed": 4,
+          "n_window": 2,
+          "summary_chars": 300,
+          "window_chars": 61,
+          "facts": {
+            "order_1": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_2": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "company": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "promise_parts": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "invoice_type": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "warranty": {
+              "in_summary": false,
+              "in_window": true
+            },
+            "notify": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.5714
+        }
+      ]
+    }
+  ]
+}

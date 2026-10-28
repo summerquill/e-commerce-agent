@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "description": "上下文压缩评测集：多轮电商客服对话，埋点关键事实（订单号/商品/身份/承诺/偏好）。gold 为压缩后必须仍可检索到的最小关键字符串。事实自然分布在早期消息中（依赖摘要挽回），每个脚本最后一条 assistant 消息含一个 late 控制组事实（应留在保留窗口内，用于校验 harness 本身）。",
+  "scripts": [
+    {
+      "id": "ret_flow_001",
+      "description": "退货流程：早期订单号/商品埋点 + 两个时效承诺 + late 控制组",
+      "messages": [
+        {"role": "user", "content": "你好，我上周买的 Sony WH-1000XM5 耳机有杂音，想退货，订单号 SO202511020015。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_101", "type": "function", "function": {"name": "query_order", "arguments": "{\"order_id\": \"SO202511020015\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_101", "content": "{\"order_id\": \"SO202511020015\", \"product\": \"Sony WH-1000XM5 降噪耳机\", \"amount\": 2399.0, \"status\": \"已签收\", \"delivered_at\": \"2025-11-05\"}"},
+        {"role": "assistant", "content": "查到您的订单：Sony WH-1000XM5 降噪耳机，2399 元，11 月 5 日已签收，符合 7 天无理由退货条件。需要我为您发起退货申请吗？"},
+        {"role": "user", "content": "对，帮我申请一下。另外这是送人的，取件时包装别弄坏。"},
+        {"role": "assistant", "content": "已为您提交退货申请，审核通过后明天上午会有快递员上门取件，请保持电话畅通，取件时请保留原包装。"},
+        {"role": "user", "content": "取件大概是几点？"},
+        {"role": "assistant", "content": "预计上午 10 点到 12 点之间，具体时间以快递员联系为准。"},
+        {"role": "user", "content": "好的。退款多久能到账？"},
+        {"role": "assistant", "content": "商品取件验收合格后，退款将在 3 个工作日内原路退回您的支付账户。"},
+        {"role": "user", "content": "行，那我现在还需要做什么吗？"},
+        {"role": "assistant", "content": "您不需要其他操作，保持手机畅通等待取件即可，取件完成后自动进入退款流程。"},
+        {"role": "user", "content": "麻烦你了。"},
+        {"role": "assistant", "content": "不客气，取件和退款进度都会通过短信通知您，有问题随时联系我们。"}
+      ],
+      "facts": [
+        {"id": "order_id", "category": "order_id", "gold": "SO202511020015"},
+        {"id": "product", "category": "product", "gold": "Sony WH-1000XM5"},
+        {"id": "promise_pickup", "category": "promise", "gold": "上门取件"},
+        {"id": "promise_refund", "category": "promise", "gold": "3 个工作日"},
+        {"id": "notice_channel", "category": "other", "gold": "短信通知"}
+      ]
+    },
+    {
+      "id": "ship_delay_002",
+      "description": "催发货：会员身份 + 加急承诺 + 超时补偿承诺 + late 控制组",
+      "messages": [
+        {"role": "user", "content": "你好，我 11 月 6 号买的 AirPods Pro 到现在还没发货，说好 48 小时内发出的，订单号 SO202511060032。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_201", "type": "function", "function": {"name": "query_order", "arguments": "{\"order_id\": \"SO202511060032\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_201", "content": "{\"order_id\": \"SO202511060032\", \"product\": \"Apple AirPods Pro 2\", \"amount\": 1899.0, \"status\": \"待发货\", \"paid_at\": \"2025-11-06\"}"},
+        {"role": "assistant", "content": "非常抱歉让您久等了。查到您的订单目前还是待发货状态，确实已经超出 48 小时的承诺发货时效。"},
+        {"role": "user", "content": "到底什么时候能发？我是钻石会员，享 48 小时优先发货权益的。"},
+        {"role": "assistant", "content": "已核实您是钻石会员，已为您的订单加急标记，仓库会在 24 小时内优先发出。"},
+        {"role": "user", "content": "要是 24 小时还发不出来呢？"},
+        {"role": "assistant", "content": "若 24 小时内仍未发出，我们将按超时规则为您发放 50 元无门槛优惠券作为补偿。"},
+        {"role": "user", "content": "行吧，那我等等。发票可以开电子的吗？"},
+        {"role": "assistant", "content": "可以的，发货后电子发票会自动发送到您下单时预留的邮箱。"},
+        {"role": "user", "content": "记得用顺丰，我下周出差要带走。"},
+        {"role": "assistant", "content": "已为您备注顺丰快递，发货后会第一时间发送物流短信给您。"},
+        {"role": "user", "content": "嗯，麻烦尽快。"},
+        {"role": "assistant", "content": "好的，我们会持续跟进，有任何进展第一时间通知您。"}
+      ],
+      "facts": [
+        {"id": "order_id", "category": "order_id", "gold": "SO202511060032"},
+        {"id": "product", "category": "product", "gold": "AirPods Pro"},
+        {"id": "identity", "category": "identity", "gold": "钻石会员"},
+        {"id": "promise_expedite", "category": "promise", "gold": "24 小时"},
+        {"id": "compensation", "category": "promise", "gold": "50 元无门槛优惠券"},
+        {"id": "notify", "category": "other", "gold": "第一时间通知"}
+      ]
+    },
+    {
+      "id": "pref_003",
+      "description": "偏好收集与推荐：颜色偏好/预算/收货方式偏好 + late 控制组",
+      "messages": [
+        {"role": "user", "content": "你好，想给我妈挑个按摩仪，预算 500 元以内，她喜欢红色的小家电。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_301", "type": "function", "function": {"name": "search_products", "arguments": "{\"keyword\": \"颈部按摩仪\", \"max_price\": 500}"}}]},
+        {"role": "tool", "tool_call_id": "call_301", "content": "{\"results\": [{\"name\": \"康舒颈部按摩仪 红色款\", \"price\": 399, \"tags\": [\"热敷\", \"亲肤硅胶\"]}, {\"name\": \"松研肩颈按摩披肩\", \"price\": 459, \"tags\": [\"揉捏\"]}]}"},
+        {"role": "assistant", "content": "为您找到康舒颈部按摩仪红色款，399 元，在您预算内，带热敷功能，亲肤硅胶材质，很适合送长辈。"},
+        {"role": "user", "content": "399 这款不错。能送到公司吗？我平时上班，希望放前台代收。"},
+        {"role": "assistant", "content": "支持的，下单时收货地址填公司地址并备注前台代收即可，工作日白天都能配送。"},
+        {"role": "user", "content": "我妈皮肤敏感，材质有保障吗？"},
+        {"role": "assistant", "content": "这款是医用级硅胶，通过皮肤刺激性测试，敏感肌可用，还支持 30 天试用不满意退货。"},
+        {"role": "user", "content": "好，拍 399 红色这款。能加礼盒包装吗？"},
+        {"role": "assistant", "content": "可以的，结算时勾选礼品包装即可，我们配红色礼盒，跟机身颜色很搭。"},
+        {"role": "user", "content": "太好了，那就这款。"},
+        {"role": "assistant", "content": "好的，感谢您的信任，祝阿姨使用愉快，有任何问题随时联系我们。"}
+      ],
+      "facts": [
+        {"id": "preference_red", "category": "preference", "gold": "红色"},
+        {"id": "budget", "category": "preference", "gold": "500 元"},
+        {"id": "delivery", "category": "preference", "gold": "前台代收"},
+        {"id": "product", "category": "product", "gold": "颈部按摩仪"},
+        {"id": "aftercare", "category": "other", "gold": "随时联系我们"}
+      ]
+    },
+    {
+      "id": "b2b_004",
+      "description": "企业采购跨主题长对话：双订单号 + 公司抬头 + 补发/开票/质保三承诺 + late 控制组",
+      "messages": [
+        {"role": "user", "content": "你好，我们公司上周下的两笔订单要处理：SO202511090077 要开发票，SO202511090088 收到货缺配件。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_401", "type": "function", "function": {"name": "query_order", "arguments": "{\"order_id\": \"SO202511090077\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_401", "content": "{\"order_id\": \"SO202511090077\", \"product\": \"罗技 MK540 键鼠套装 x20\", \"amount\": 15800.0, \"status\": \"已签收\"}"},
+        {"role": "assistant", "content": "查到订单 SO202511090077 是罗技 MK540 键鼠套装 20 件、15800 元，已签收。先处理发票，请问需要开哪种发票？"},
+        {"role": "user", "content": "增值税专票。第二笔 SO202511090088 是办公椅，装到一半发现缺了万向轮配件。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_402", "type": "function", "function": {"name": "query_order", "arguments": "{\"order_id\": \"SO202511090088\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_402", "content": "{\"order_id\": \"SO202511090088\", \"product\": \"人体工学办公椅 x6\", \"amount\": 5400.0, \"status\": \"已签收\", \"note\": \"配件缺失\"}"},
+        {"role": "assistant", "content": "查到订单 SO202511090088 是人体工学办公椅 6 把、5400 元。非常抱歉出现配件缺失，我们将在 48 小时内补发全部万向轮配件。"},
+        {"role": "user", "content": "48 小时太久，我们周三前要安装使用。"},
+        {"role": "assistant", "content": "已为您申请加急，补发配件明天由顺丰发出，最迟后天上午送达。"},
+        {"role": "user", "content": "行。专票抬头我发你：星辰科技有限公司，税号 91330106MA2H3XL0X。"},
+        {"role": "assistant", "content": "已记录开票抬头星辰科技有限公司。请再提供注册地址、电话、开户行及账号，收到后 24 小时内开出专票。"},
+        {"role": "user", "content": "资料下午发你。另外这批椅子后续再出问题怎么处理？"},
+        {"role": "assistant", "content": "办公椅享受 3 年质保，非人为损坏支持免费上门维修，可在订单页面直接报修。"},
+        {"role": "user", "content": "好的，那就先这样，资料我下午发。"},
+        {"role": "assistant", "content": "好的，收到您的开票资料后会尽快开票，补发配件的物流单号也会第一时间同步给您。"}
+      ],
+      "facts": [
+        {"id": "order_1", "category": "order_id", "gold": "SO202511090077"},
+        {"id": "order_2", "category": "order_id", "gold": "SO202511090088"},
+        {"id": "company", "category": "identity", "gold": "星辰科技有限公司"},
+        {"id": "promise_parts", "category": "promise", "gold": "万向轮配件"},
+        {"id": "invoice_type", "category": "promise", "gold": "增值税专票"},
+        {"id": "warranty", "category": "promise", "gold": "3 年质保"},
+        {"id": "notify", "category": "other", "gold": "第一时间同步"}
+      ]
+    }
+  ]
+}
