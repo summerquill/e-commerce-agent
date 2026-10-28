@@ -120,10 +120,32 @@
 - 延迟：稳态 ~700ms/条（CPU 5 对 CrossEncoder 前向；首条 ~30s 含模型加载）——本地 CPU 真实成本，生产可换 GPU 或 API 化
 - **取舍记录**：方案 B（rerank 对 top-10 全重排取 top-5，可能省掉补位规则）未验证即跳过，选择「两半各自已验证」的保守组合；B 的价值留作后续实验
 
+### 5.1 端到端 A/B 对照（2026-10-28）
+
+检索层指标提升是否传导到回答质量？A/B 对照：A 组=`dense`，B 组=`hybrid_rerank`，同 32 条、同生成模型（deepseek-v4-flash）、同 prompt、top-k=3，唯一变量是检索模式。生成层评分用**自写 LLM judge**（ragas 依赖链与本地 bge 栈冲突被移除）：faithfulness（断言被 context 支持占比）+ answer_correctness（reference 事实点覆盖占比），每题各 1 次调用。
+
+| 层 | 指标 | A: dense | B: hybrid_rerank | 变化 |
+|---|---|---|---|---|
+| 检索 | MRR@3 | 0.8871 | **0.9839** | +9.7pt |
+| 检索 | recall@3 | 0.9140 | 0.9301 | +1.6pt |
+| judge | answer_correctness | 0.8339 | **0.8634** | **+3.0pt** |
+| judge | faithfulness | 0.9280 | 0.9126 | -1.5pt |
+| 成本 | 检索稳态延迟 | ~26ms | ~700ms | +rerank CPU 推理 |
+
+**传导证据链**（per-case）：
+- **q_011（组合收益兑现）**：补位把 gold 01-00 捞进 top-5（第 5 位），rerank 再把它顶到 **top-3 第 2**——原以为 top-3 口径下补位收益会丢，实际「补位→精排」的组合让 gold 双双在场，correctness 0.4→0.8。A 方案的价值在此案例闭环
+- q_018：gold 01-01 从第 2 →第 1，correctness 0.5→1.0
+- 6/32 条 top1 发生变化，涨跌相抵后净改善
+
+**噪声管理教训**：
+- LLM judge 单条波动巨大：q_037 两组 top3 完全相同、correctness 均 1.0，faithfulness 却 1.0→0.4（同输入不同判定）——单条 judge 读数不可信，**组均值（31 条）才是可靠口径**，faithfulness -1.5pt 大概率是噪声而非退化
+- temperature=0 不等于确定性：q_029 两组 top1 相同（gold 已在第 1）correctness 仍 0.6→1.0，生成模型输出本身有随机性
+- 结论：A/B 差异要看方向（correctness +3.0pt）+ 传导路径（q_011/q_018 可解释）+ 噪声上界（judge 单条 ±0.6）三重验证，不能只看均值数字
+
 ## 6. 遗留问题与下一步
 
 - **遗留**：q_020 / q_034 的缺失 gold 属"跨文档词汇干扰"（"破损"同现于配送说明与退换货政策两份文档），BM25 修不了；**已由 rerank 精排解决（见第 5 节）**。
-- **下一步**（已完成）：① HybridRetriever 按新契约改 v2（dense 保底 + sparse 补位，RRF 代码移除）；② 单测重写为补位规则契约（全文件 27 用例离线全绿）；③ 全量 32 条实测复现模拟结论；④ rerank 探针 + 生产接入（方案 A）；⑤ 分 commit 落库（功能 / 测试+文档）。
+- **下一步**（已完成）：① HybridRetriever 按新契约改 v2（dense 保底 + sparse 补位，RRF 代码移除）；② 单测重写为补位规则契约（全文件 27 用例离线全绿）；③ 全量 32 条实测复现模拟结论；④ rerank 探针 + 生产接入（方案 A）；⑤ 自写 LLM judge 替代 ragas + 端到端 A/B 对照（见 5.1 节）；⑥ 分 commit 落库（功能 / 测试+文档）。
 
 ## 7. 面试讲点提炼
 

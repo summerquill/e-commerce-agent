@@ -1,0 +1,29 @@
+{
+  "dataset": "app/agent/rag/eval/datasets/rag_eval.example.json",
+  "case_count": 32,
+  "answerable_case_count": 31,
+  "top_k": 3,
+  "no_judge": false,
+  "retrieval_metrics": {
+    "hit@3": 1.0,
+    "recall@3": 0.9301,
+    "precision@3": 0.3656,
+    "mrr@3": 0.9839
+  },
+  "latency_ms": {
+    "retrieval_mean": 2280.8828,
+    "generation_mean": 1843.1481,
+    "total_mean": 4124.0309
+  },
+  "notes": [
+    "Retrieval metrics exclude cases with empty expected_chunk_ids.",
+    "Precision@K uses K as denominator even if fewer than K chunks are returned.",
+    "For unanswerable cases, add a separate abstention/unsupported-answer review; empty gold IDs are not scored as perfect retrieval."
+  ],
+  "judge": {
+    "faithfulness_mean": 0.9126,
+    "answer_correctness_mean": 0.8634,
+    "judge_case_count": 31,
+    "failed_case_count": 0
+  }
+}
