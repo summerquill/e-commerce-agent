@@ -1,0 +1,550 @@
+{
+  "config": {
+    "dataset": "app/agent/memory/eval/datasets/compression_eval_adversarial.json",
+    "summarizer": "llm",
+    "threshold": 10,
+    "keep_recent": 3,
+    "max_chars": 300,
+    "pin_entities": false,
+    "hard_cap": 0,
+    "out": "app/agent/memory/eval/results/compression-llm-t10-k3-adv-nopin.json"
+  },
+  "aggregate": {
+    "n_scripts": 1,
+    "mean_final_retention": 0.7,
+    "mean_summary_reliant_retention": 0.6667,
+    "mean_compression_ratio": 4.0,
+    "total_rounds": 4,
+    "decay_curve": {
+      "round_1": 0.5,
+      "round_2": 0.8,
+      "round_3": 0.7,
+      "round_4": 0.7
+    },
+    "retention_by_category": {
+      "order_id": {
+        "retention": 1.0,
+        "total": 3
+      },
+      "other": {
+        "retention": 0.6667,
+        "total": 3
+      },
+      "preference": {
+        "retention": 1.0,
+        "total": 1
+      },
+      "promise": {
+        "retention": 0.3333,
+        "total": 3
+      }
+    }
+  },
+  "scripts": [
+    {
+      "script_id": "long_multorder_008",
+      "n_rounds": 4,
+      "original_chars": 1656,
+      "final_summary_chars": 305,
+      "final_summary": "用户为黑卡会员，咨询三个订单电子发票下载，客服答复均可在订单详情页自助下载，已开票直接下载，未开票待开票完成后下载。用户询问售后是否影响会员考核，客服答复不影响，黑卡会员享售后专属客服通道。用户再问积分规则，客服说明每消费1元累计1积分，换货按实付金额累计，退款部分不计积分。用户最后询问会员日日期，想攒积分当天兑换，客服尚未回应，此为待办。涉及订单：SO202511150102西屋破壁机PB21换货、SO202511150108苏泊尔电水壶SW-15退款、SO202511150103电饭煲投诉；此前退款3个工作日内到账、换货按顺丰发出、质量投诉工单CP2025111509专员2小时内回电等承诺仍待跟进。",
+      "final_pinned": [],
+      "final_pinned_chars": 0,
+      "fact_categories": {
+        "order_a": "order_id",
+        "order_b": "order_id",
+        "order_c": "order_id",
+        "a_exchange_promise": "promise",
+        "b_coupon": "other",
+        "b_callback": "promise",
+        "c_amount": "other",
+        "c_eta": "promise",
+        "preference_sf": "preference",
+        "late_member_day": "other"
+      },
+      "final_window_chars": 109,
+      "final_window": [
+        {
+          "role": "assistant",
+          "content": "每月 8 号是会员日，积分兑换礼品会上新并有折扣，黑卡会员额外享 95 折。"
+        },
+        {
+          "role": "user",
+          "content": "那我把日子记一下。今天就这三个问题，有进展了联系我。"
+        },
+        {
+          "role": "assistant",
+          "content": "好的稍后专员会就投诉工单电话联系您，换货新机发出和退款到账也都会有短信通知，请您留意查收。"
+        }
+      ],
+      "compression_ratio": 4.0,
+      "retention": 0.7,
+      "summary_reliant_retention": 0.6667,
+      "summary_reliant_ids": [
+        "a_exchange_promise",
+        "b_callback",
+        "b_coupon",
+        "c_amount",
+        "c_eta",
+        "order_a",
+        "order_b",
+        "order_c",
+        "preference_sf"
+      ],
+      "final_facts": {
+        "order_a": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "order_b": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "order_c": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "a_exchange_promise": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "b_coupon": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "b_callback": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "c_amount": {
+          "in_summary": false,
+          "in_window": false
+        },
+        "c_eta": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "preference_sf": {
+          "in_summary": true,
+          "in_window": false
+        },
+        "late_member_day": {
+          "in_summary": true,
+          "in_window": true
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "n_compressed": 9,
+          "n_window": 3,
+          "summary_chars": 275,
+          "window_chars": 164,
+          "facts": {
+            "order_a": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "order_b": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_c": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "a_exchange_promise": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "b_coupon": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "b_callback": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "c_amount": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "c_eta": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_member_day": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.5,
+          "summary": "用户咨询两个订单。第一单 SO202511150102，西屋破壁机 PB21，599 元，已申请换货，售后单 EX2025111502，当前状态为换货中；客服说明仓库收到旧机并仓检通过后，48 小时内发出新机。第二单 SO202511150103，电饭煲内胆涂层使用两周起皮掉渣，用户要求投诉；客服已登记质量投诉，工单号 CP2025111509，承诺专员 24 小时内电话联系，并补偿 50 元无门槛券至账户。用户最后追问 SO202511150102 此前申请的一笔退款进度，客服尚未查询回复，此为待办事项；需核实该订单换货与退款并存的实际情况。",
+          "input_messages": [
+            {
+              "role": "user",
+              "content": "你好，我今天要处理两个订单的问题。先说第一个，破壁机用着有异响，申请了换货，订单号 SO202511150102，帮我看看现在换货到哪一步了。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_801",
+                  "type": "function",
+                  "function": {
+                    "name": "query_order",
+                    "arguments": "{\"order_id\": \"SO202511150102\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_801",
+              "content": "{\"order_id\": \"SO202511150102\", \"product\": \"西屋破壁机 PB21\", \"amount\": 599.0, \"status\": \"换货中\", \"aftersale_id\": \"EX2025111502\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "查到您的换货订单：西屋破壁机 PB21，599 元，当前状态换货中。仓库收到您寄回的旧机后会做仓检，通过后 48 小时内会发出新机。"
+            },
+            {
+              "role": "user",
+              "content": "好。第二个事，电饭煲内胆涂层才用两周就起皮掉渣，这质量必须投诉，订单号 SO202511150103。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_802",
+                  "type": "function",
+                  "function": {
+                    "name": "register_complaint",
+                    "arguments": "{\"order_id\": \"SO202511150103\", \"type\": \"质量问题\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_802",
+              "content": "{\"complaint_id\": \"CP2025111509\", \"callback_sla\": \"24 小时\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您登记质量投诉，工单号 CP2025111509，客服专员 24 小时内电话联系您处理，同时补偿 50 元无门槛券到您的账户。"
+            },
+            {
+              "role": "user",
+              "content": "另外我前几天还申请过一笔退款，我想想，好像就是破壁机这个 SO202511150102，帮我查下退到哪了。"
+            }
+          ],
+          "pinned": []
+        },
+        {
+          "round": 2,
+          "n_compressed": 10,
+          "n_window": 3,
+          "summary_chars": 352,
+          "window_chars": 124,
+          "facts": {
+            "order_a": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_b": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_c": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "a_exchange_promise": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "b_coupon": {
+              "in_summary": true,
+              "in_window": true
+            },
+            "b_callback": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "c_amount": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "c_eta": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "late_member_day": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.8,
+          "summary": "用户先咨询两个订单：SO202511150102 西屋破壁机PB21，599元，已申请换货，售后单EX2025111502，换货中，客服说明旧机仓检通过后48小时内发新机；SO202511150103 电饭煲内胆涂层使用两周起皮掉渣，用户要求投诉，已登记质量投诉，工单CP2025111509，承诺专员24小时内电话联系，并补偿50元无门槛券。用户随后追问第一单退款进度，客服核实该订单无退款记录、仅有换货记录；用户记起退款实为苏泊尔电水壶SW-15，订单SO202511150108，客服查询到89元已于2025-11-14原路退回，3个工作日内到账。用户再问破壁机新机发出时间，客服答复旧机仍在检测中，通过后短信通知并按48小时内发出。最后用户反映投诉专员尚未回电，要求催办，客服尚未回应，此为待办。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_803",
+                  "type": "function",
+                  "function": {
+                    "name": "query_refund",
+                    "arguments": "{\"order_id\": \"SO202511150102\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_803",
+              "content": "{\"order_id\": \"SO202511150102\", \"refund\": null, \"note\": \"该订单无退款记录，仅有换货记录\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "帮您核实了，SO202511150102 这单没有退款记录，它目前在换货流程里，没有申请过退款。"
+            },
+            {
+              "role": "user",
+              "content": "哦那我想起来了，退款是电水壶那单，订单号 SO202511150108，刚才记混了，不好意思。"
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_804",
+                  "type": "function",
+                  "function": {
+                    "name": "query_refund",
+                    "arguments": "{\"order_id\": \"SO202511150108\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_804",
+              "content": "{\"order_id\": \"SO202511150108\", \"product\": \"苏泊尔电水壶 SW-15\", \"refund_amount\": 89.0, \"status\": \"已退款\", \"refund_at\": \"2025-11-14\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "查到 SO202511150108 电水壶的退款：89 元已于昨天原路退回，3 个工作日内到账，请留意查收。"
+            },
+            {
+              "role": "user",
+              "content": "行。那我那个破壁机新机什么时候能发出来？"
+            },
+            {
+              "role": "assistant",
+              "content": "换货的破壁机在仓检通过后 48 小时内发出，您寄回的旧机还在检测中，通过后会短信通知您发货。"
+            },
+            {
+              "role": "user",
+              "content": "投诉那单的专员到现在还没打给我，帮我催一下。"
+            }
+          ],
+          "pinned": []
+        },
+        {
+          "round": 3,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 230,
+          "window_chars": 109,
+          "facts": {
+            "order_a": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_b": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_c": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "a_exchange_promise": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "b_coupon": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "b_callback": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "c_amount": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "c_eta": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "late_member_day": {
+              "in_summary": false,
+              "in_window": false
+            }
+          },
+          "retention": 0.7,
+          "summary": "用户询问苏泊尔电水壶SW-15退款89元是否到账，客服答复仍在银行处理中，3个工作日内到账并短信通知。用户要求破壁机换货新机使用顺丰承运，客服已备注按顺丰发出。客服已加急质量投诉工单CP2025111509，承诺专员2小时内回电。用户最后询问三个订单的电子发票能否在订单页下载，客服尚未回应，此为待办。涉及订单：SO202511150102西屋破壁机PB21换货、SO202511150108苏泊尔电水壶SW-15退款、SO202511150103电饭煲投诉。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_805",
+                  "type": "function",
+                  "function": {
+                    "name": "urge_complaint",
+                    "arguments": "{\"complaint_id\": \"CP2025111509\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_805",
+              "content": "{\"urged\": true, \"new_sla\": \"2 小时\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您加急投诉工单 CP2025111509，专员 2 小时内回电，请您保持电话畅通。"
+            },
+            {
+              "role": "user",
+              "content": "退款的 89 块钱到账了没？"
+            },
+            {
+              "role": "assistant",
+              "content": "退款 89 元还在银行处理中，3 个工作日内到账，到账后会短信通知您。"
+            },
+            {
+              "role": "user",
+              "content": "对了，寄新机的时候给我用顺丰，中通太慢了。"
+            },
+            {
+              "role": "assistant",
+              "content": "已为您备注换货新机顺丰承运发出。"
+            },
+            {
+              "role": "user",
+              "content": "发票方面，我这三个订单的电子发票都能在订单页下载吗？"
+            }
+          ],
+          "pinned": []
+        },
+        {
+          "round": 4,
+          "n_compressed": 8,
+          "n_window": 3,
+          "summary_chars": 305,
+          "window_chars": 109,
+          "facts": {
+            "order_a": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_b": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "order_c": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "a_exchange_promise": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "b_coupon": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "b_callback": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "c_amount": {
+              "in_summary": false,
+              "in_window": false
+            },
+            "c_eta": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "preference_sf": {
+              "in_summary": true,
+              "in_window": false
+            },
+            "late_member_day": {
+              "in_summary": true,
+              "in_window": true
+            }
+          },
+          "retention": 0.7,
+          "summary": "用户为黑卡会员，咨询三个订单电子发票下载，客服答复均可在订单详情页自助下载，已开票直接下载，未开票待开票完成后下载。用户询问售后是否影响会员考核，客服答复不影响，黑卡会员享售后专属客服通道。用户再问积分规则，客服说明每消费1元累计1积分，换货按实付金额累计，退款部分不计积分。用户最后询问会员日日期，想攒积分当天兑换，客服尚未回应，此为待办。涉及订单：SO202511150102西屋破壁机PB21换货、SO202511150108苏泊尔电水壶SW-15退款、SO202511150103电饭煲投诉；此前退款3个工作日内到账、换货按顺丰发出、质量投诉工单CP2025111509专员2小时内回电等承诺仍待跟进。",
+          "input_messages": [
+            {
+              "role": "assistant",
+              "content": "可以的，三个订单的电子发票都能在订单详情页自助下载，已开票的直接下载，未开票的等开票完成后下载。"
+            },
+            {
+              "role": "user",
+              "content": "我是黑卡会员，这些售后会不会算考核扣分啊？"
+            },
+            {
+              "role": "assistant",
+              "content": "不会，售后申请是您的正当权益，不影响任何会员考核，黑卡会员还享售后专属客服通道。"
+            },
+            {
+              "role": "user",
+              "content": "黑卡积分是怎么攒的来着？"
+            },
+            {
+              "role": "assistant",
+              "content": "每消费 1 元累计 1 积分，换货订单按实付金额累计，退款部分不计积分。"
+            },
+            {
+              "role": "user",
+              "content": "行，知道了。"
+            },
+            {
+              "role": "assistant",
+              "content": "请问还有其他可以帮您的吗？"
+            },
+            {
+              "role": "user",
+              "content": "对了你们会员日是哪天？我想把积分攒着那天换东西。"
+            }
+          ],
+          "pinned": []
+        }
+      ]
+    }
+  ]
+}

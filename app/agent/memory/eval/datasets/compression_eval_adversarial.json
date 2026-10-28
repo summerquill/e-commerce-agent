@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "对抗性压缩评测集：三订单并行 + 改口更正 + 长间隔回指。设计动机：基础 prod 集每脚本仅 1 个订单号且全程活跃，摘要器保实体零压力，锚点机制从未出险（零增量）。本集制造锚点的目标失效场景：A/B/C 三个订单号集中在早期（消息 1~16），中段一次性回指后完全淡出（A 最后出现在 m12、B m20、C m24），m13 给摘要器改口动机（退款单由 A 更正为 C），收尾总结 m38 复述三条业务线但不带任何单号。t=10/k=3 下触发 4~5 轮递归压缩，预期摘要链在多轮重写后丢弃淡出订单的原文。运行方式（需 API 授权）：python -m app.agent.memory.eval.run_eval --summarizer llm --threshold 10 --keep-recent 3 --dataset app/agent/memory/eval/datasets/compression_eval_adversarial.json [--pin-entities]",
+  "scripts": [
+    {
+      "id": "long_multorder_008",
+      "description": "三单并行客服会话：A=西屋破壁机换货（未完结，仓检中）、B=苏泊尔电饭煲质量投诉（24h 回电 + 补偿券 CP2025111509）、C=电水壶退款 89 元（m9 误记为 A、m13 改口为 C）。A/B/C 与券号集中于前 16 条消息，m17/m19/m23 分别对 A/B/C 做最后一次业务回指，此后 14+ 条消息不再出现；收尾 m38 总结三线但不含单号。埋点 10 条事实：3 个 order_id（锚点主角）+ CP 券号（正则可锚）+ 4 条承诺/金额（锚点不可覆盖）+ 顺丰偏好 + late 控制组（会员日）。",
+      "messages": [
+        {"role": "user", "content": "你好，我今天要处理两个订单的问题。先说第一个，破壁机用着有异响，申请了换货，订单号 SO202511150102，帮我看看现在换货到哪一步了。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_801", "type": "function", "function": {"name": "query_order", "arguments": "{\"order_id\": \"SO202511150102\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_801", "content": "{\"order_id\": \"SO202511150102\", \"product\": \"西屋破壁机 PB21\", \"amount\": 599.0, \"status\": \"换货中\", \"aftersale_id\": \"EX2025111502\"}"},
+        {"role": "assistant", "content": "查到您的换货订单：西屋破壁机 PB21，599 元，当前状态换货中。仓库收到您寄回的旧机后会做仓检，通过后 48 小时内会发出新机。"},
+        {"role": "user", "content": "好。第二个事，电饭煲内胆涂层才用两周就起皮掉渣，这质量必须投诉，订单号 SO202511150103。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_802", "type": "function", "function": {"name": "register_complaint", "arguments": "{\"order_id\": \"SO202511150103\", \"type\": \"质量问题\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_802", "content": "{\"complaint_id\": \"CP2025111509\", \"callback_sla\": \"24 小时\"}"},
+        {"role": "assistant", "content": "已为您登记质量投诉，工单号 CP2025111509，客服专员 24 小时内电话联系您处理，同时补偿 50 元无门槛券到您的账户。"},
+        {"role": "user", "content": "另外我前几天还申请过一笔退款，我想想，好像就是破壁机这个 SO202511150102，帮我查下退到哪了。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_803", "type": "function", "function": {"name": "query_refund", "arguments": "{\"order_id\": \"SO202511150102\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_803", "content": "{\"order_id\": \"SO202511150102\", \"refund\": null, \"note\": \"该订单无退款记录，仅有换货记录\"}"},
+        {"role": "assistant", "content": "帮您核实了，SO202511150102 这单没有退款记录，它目前在换货流程里，没有申请过退款。"},
+        {"role": "user", "content": "哦那我想起来了，退款是电水壶那单，订单号 SO202511150108，刚才记混了，不好意思。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_804", "type": "function", "function": {"name": "query_refund", "arguments": "{\"order_id\": \"SO202511150108\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_804", "content": "{\"order_id\": \"SO202511150108\", \"product\": \"苏泊尔电水壶 SW-15\", \"refund_amount\": 89.0, \"status\": \"已退款\", \"refund_at\": \"2025-11-14\"}"},
+        {"role": "assistant", "content": "查到 SO202511150108 电水壶的退款：89 元已于昨天原路退回，3 个工作日内到账，请留意查收。"},
+        {"role": "user", "content": "行。那我那个破壁机新机什么时候能发出来？"},
+        {"role": "assistant", "content": "换货的破壁机在仓检通过后 48 小时内发出，您寄回的旧机还在检测中，通过后会短信通知您发货。"},
+        {"role": "user", "content": "投诉那单的专员到现在还没打给我，帮我催一下。"},
+        {"role": "assistant", "content": "", "tool_calls": [{"id": "call_805", "type": "function", "function": {"name": "urge_complaint", "arguments": "{\"complaint_id\": \"CP2025111509\"}"}}]},
+        {"role": "tool", "tool_call_id": "call_805", "content": "{\"urged\": true, \"new_sla\": \"2 小时\"}"},
+        {"role": "assistant", "content": "已为您加急投诉工单 CP2025111509，专员 2 小时内回电，请您保持电话畅通。"},
+        {"role": "user", "content": "退款的 89 块钱到账了没？"},
+        {"role": "assistant", "content": "退款 89 元还在银行处理中，3 个工作日内到账，到账后会短信通知您。"},
+        {"role": "user", "content": "对了，寄新机的时候给我用顺丰，中通太慢了。"},
+        {"role": "assistant", "content": "已为您备注换货新机顺丰承运发出。"},
+        {"role": "user", "content": "发票方面，我这三个订单的电子发票都能在订单页下载吗？"},
+        {"role": "assistant", "content": "可以的，三个订单的电子发票都能在订单详情页自助下载，已开票的直接下载，未开票的等开票完成后下载。"},
+        {"role": "user", "content": "我是黑卡会员，这些售后会不会算考核扣分啊？"},
+        {"role": "assistant", "content": "不会，售后申请是您的正当权益，不影响任何会员考核，黑卡会员还享售后专属客服通道。"},
+        {"role": "user", "content": "黑卡积分是怎么攒的来着？"},
+        {"role": "assistant", "content": "每消费 1 元累计 1 积分，换货订单按实付金额累计，退款部分不计积分。"},
+        {"role": "user", "content": "行，知道了。"},
+        {"role": "assistant", "content": "请问还有其他可以帮您的吗？"},
+        {"role": "user", "content": "对了你们会员日是哪天？我想把积分攒着那天换东西。"},
+        {"role": "assistant", "content": "每月 8 号是会员日，积分兑换礼品会上新并有折扣，黑卡会员额外享 95 折。"},
+        {"role": "user", "content": "那我把日子记一下。今天就这三个问题，有进展了联系我。"},
+        {"role": "assistant", "content": "好的稍后专员会就投诉工单电话联系您，换货新机发出和退款到账也都会有短信通知，请您留意查收。"}
+      ],
+      "facts": [
+        {"id": "order_a", "category": "order_id", "gold": "SO202511150102"},
+        {"id": "order_b", "category": "order_id", "gold": "SO202511150103"},
+        {"id": "order_c", "category": "order_id", "gold": "SO202511150108"},
+        {"id": "a_exchange_promise", "category": "promise", "gold": "48 小时内发出"},
+        {"id": "b_coupon", "category": "other", "gold": "CP2025111509"},
+        {"id": "b_callback", "category": "promise", "gold": "24 小时内"},
+        {"id": "c_amount", "category": "other", "gold": "89 元"},
+        {"id": "c_eta", "category": "promise", "gold": "3 个工作日"},
+        {"id": "preference_sf", "category": "preference", "gold": "顺丰"},
+        {"id": "late_member_day", "category": "other", "gold": "会员日"}
+      ]
+    }
+  ]
+}
