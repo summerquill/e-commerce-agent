@@ -31,6 +31,13 @@ from app.agent.memory.eval.baselines import (  # noqa: E402
 )
 from app.agent.memory.eval.factcheck import Fact, check_facts  # noqa: E402
 from app.agent.memory.eval.runner import aggregate, run_script  # noqa: E402
+from app.agent.pinned import (  # noqa: E402
+    _scan_text,
+    extract_pinnable_entities,
+    merge_pinned,
+    render_pinned_section,
+)
+from app.agent.storage import load_session, save_session  # noqa: E402
 from app.agent.summarizer import build_transcript, split_history  # noqa: E402
 
 DATASET_PATH = (
@@ -302,6 +309,67 @@ class TestAgentEquivalence(unittest.TestCase):
             self.assertEqual(agent.raw_messages, expected_recent)
             self.assertEqual(len(expected_old), 4)
 
+    def test_pinned_wired_through_agent(self):
+        """生产链路：压缩后实体入 pinned、_build_messages 注入锚点段、
+        summarize 的 hard_cap 生效、reset 清空、会话往返保留。"""
+        from app.agent.chat import EcomAgent
+        from app.config.settings import settings
+
+        dataset = _load_dataset()
+        script = _script_by_id(dataset, "ret_flow_001")
+        msgs = [dict(m) for m in script["messages"][:6]]  # 含订单号，触发一轮压缩
+
+        with tempfile.TemporaryDirectory() as td:
+            session_path = os.path.join(td, "session.json")
+            with contextlib.ExitStack() as stack:
+                for attr, value in (
+                    ("session_path", session_path),
+                    ("memory_enabled", False),
+                    ("skills_enabled", False),
+                    ("mcp_enabled", False),
+                    ("history_threshold", 4),
+                    ("history_keep_recent", 2),
+                    ("summary_hard_cap", 50),
+                ):
+                    stack.enter_context(patch.object(settings, attr, value))
+                agent = EcomAgent()
+
+                # 必须显式替换为桩 client（构造即建真实 client 的陷阱，见上例注释）
+                # 注意：_compress_history 运行时才读 settings.summary_hard_cap，
+                # 压缩调用与断言必须留在 patch 窗口内（测试发现：ExitStack 提前
+                # 退出会让 hard_cap 回落到默认 400）
+                agent.client = _StubSummaryClient("x" * 500)  # 超长摘要触发硬截断
+                agent.raw_messages = msgs
+                agent.summary = None
+                agent._compress_history()
+
+                # hard_cap 截断生效（prompt 级约束不可靠的实证 → 代码级兜底）
+                self.assertEqual(len(agent.summary), 50)
+                self.assertIn("SO202511020015", agent.pinned_facts)
+
+                built = agent._build_messages()
+                anchors = [
+                    i for i, m in enumerate(built)
+                    if m["role"] == "system" and "关键信息锚点" in m["content"]
+                ]
+                self.assertEqual(len(anchors), 1)
+                self.assertIn("SO202511020015", built[anchors[0]]["content"])
+                # 锚点段位于摘要之后、原始消息之前
+                idx_summary = next(
+                    i for i, m in enumerate(built)
+                    if m["role"] == "system"
+                    and m["content"].startswith("以下是此前对话的摘要"))
+                self.assertGreater(anchors[0], idx_summary)
+                self.assertLess(anchors[0], len(built) - len(agent.raw_messages))
+
+                # 会话往返：pinned 随 save_session 落盘、重建后恢复
+                agent.save()
+                self.assertEqual(load_session(session_path)["pinned_facts"],
+                                 agent.pinned_facts)
+
+            agent.reset()
+            self.assertEqual(agent.pinned_facts, [])
+
 
 # ──────────────────── trace 落盘 ────────────────────
 
@@ -333,6 +401,121 @@ class TestTracePersistence(unittest.TestCase):
                 result.final_facts[late["id"]].in_window,
                 msg=f"{script['id']} late fact '{late['gold']}' not in window",
             )
+
+
+# ──────────────────── pinned facts ────────────────────
+
+class TestPinnedExtraction(unittest.TestCase):
+
+    def test_extract_entities_positive(self):
+        """中文相邻的订单号/手机/邮箱/纯数字单号/tool args 都要抽到。"""
+        msgs = [
+            {"role": "user", "content":
+                "订单ORD-20240115-001没到，手机13812345678，邮箱a.b@test.cn"},
+            {"role": "assistant", "content": None, "tool_calls": [
+                {"id": "c1", "type": "function",
+                 "function": {"name": "query_order",
+                              "arguments": "{\"order_id\": \"SO202511020015\"}"}}]},
+            {"role": "tool", "tool_call_id": "c1", "content": "运单号TRK881234567890CN"},
+        ]
+        entities = extract_pinnable_entities(msgs)
+        for expected in ("ORD-20240115-001", "13812345678", "a.b@test.cn",
+                         "SO202511020015", "TRK881234567890CN"):
+            self.assertIn(expected, entities)
+
+    def test_extract_entities_negative(self):
+        """时间区间/日期/金额/弱 token（仅 1 个数字）/纯单词不得入锚。"""
+        text = ("明天 14:00-18:00 送达，2025-11-03 下单，199 元，"
+                "wifi6password 是密码，python 不错")
+        self.assertEqual(_scan_text(text), [])
+
+    def test_digits_inside_token_not_double_extracted(self):
+        """ORD-20240115-001 内部的 20240115 不得再以纯数字身份入锚。"""
+        entities = extract_pinnable_entities(
+            [{"role": "user", "content": "订单号ORD-20240115-001"}])
+        self.assertEqual(entities, ["ORD-20240115-001"])
+
+    def test_merge_dedup_and_fifo_cap(self):
+        merged = merge_pinned(
+            ["A1-22334455"], ["A1-22334455", "B2-33445566"], max_pinned=2)
+        self.assertEqual(merged, ["A1-22334455", "B2-33445566"])
+        merged = merge_pinned(merged, ["C3-44556677"], max_pinned=2)
+        self.assertEqual(merged, ["B2-33445566", "C3-44556677"])  # FIFO 淘汰最旧
+
+    def test_render_section(self):
+        self.assertIsNone(render_pinned_section([]))
+        section = render_pinned_section(["SO202511020015", "13812345678"])
+        self.assertIn("SO202511020015", section)
+        self.assertIn("13812345678", section)
+
+
+class TestRunnerPinMode(unittest.TestCase):
+
+    def _run(self, pin_entities: bool):
+        dataset = _load_dataset()
+        script = _script_by_id(dataset, "ret_flow_001")
+        return run_script(
+            script, _constant_summarizer("摘要不含任何事实"),
+            threshold=4, keep_recent=2, pin_entities=pin_entities)
+
+    def test_pin_rescues_entity_from_lossy_summary(self):
+        """锚点兜底：固定摘要丢弃一切，订单号仍应从锚点段找回。
+        pin 模式下 in_summary 语义为『在持久上下文（锚点∪摘要）中』。"""
+        result = self._run(pin_entities=True)
+        state = result.final_facts["order_id"]
+        self.assertTrue(state.retained)
+        self.assertTrue(state.in_summary)
+        self.assertIn("SO202511020015", result.final_pinned)
+        self.assertGreater(result.pinned_chars, 0)
+        self.assertTrue(all("SO202511020015" in r.pinned for r in result.rounds))
+
+    def test_no_pin_entity_lost(self):
+        """对照组：pin 关闭时同一脚本同一摘要器，订单号随摘要丢失。"""
+        result = self._run(pin_entities=False)
+        self.assertFalse(result.final_facts["order_id"].retained)
+        self.assertEqual(result.final_pinned, [])
+        self.assertEqual(result.pinned_chars, 0)
+
+    def test_pin_cost_counted_in_compression_ratio(self):
+        """锚点不是免费的：pin 模式的压缩比必须严格低于关闭时。"""
+        self.assertLess(
+            self._run(True).compression_ratio,
+            self._run(False).compression_ratio,
+        )
+
+    def test_aggregate_category_pooling(self):
+        """分类别聚合为跨脚本 pooling：加权均值必须等于总体 pooling 值。"""
+        dataset = _load_dataset()
+        results = [
+            run_script(s, truncate_summarizer(), threshold=4, keep_recent=2)
+            for s in dataset["scripts"]
+        ]
+        agg = aggregate(results)
+        self.assertTrue(agg["retention_by_category"])
+        n_total = sum(v["total"] for v in agg["retention_by_category"].values())
+        pooled = sum(
+            s.retained for r in results for s in r.final_facts.values()) / n_total
+        weighted = sum(
+            v["retention"] * v["total"]
+            for v in agg["retention_by_category"].values()) / n_total
+        self.assertAlmostEqual(weighted, pooled, places=4)
+
+
+class TestStoragePinnedFacts(unittest.TestCase):
+
+    def test_pinned_facts_round_trip(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "session.json")
+            save_session(path, [{"role": "user", "content": "hi"}], "摘要",
+                         pinned_facts=["SO202511020015"])
+            self.assertEqual(load_session(path)["pinned_facts"], ["SO202511020015"])
+
+    def test_legacy_session_without_pinned(self):
+        """旧格式会话文件无 pinned_facts 键，加载降级为 None 不报错。"""
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "session.json")
+            save_session(path, [], None)
+            self.assertIsNone(load_session(path)["pinned_facts"])
 
 
 if __name__ == "__main__":
