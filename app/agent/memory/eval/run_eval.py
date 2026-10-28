@@ -29,8 +29,8 @@ def main() -> None:
         help="评测集路径",
     )
     parser.add_argument(
-        "--summarizer", choices=sorted(SUMMARIZERS), default="extractive",
-        help="离线摘要器基线",
+        "--summarizer", choices=sorted(SUMMARIZERS) + ["llm"], default="extractive",
+        help="摘要器：离线基线（truncate/extractive）或真实 LLM（llm，调 API）",
     )
     parser.add_argument("--threshold", type=int, default=4, help="压缩触发阈值（消息条数）")
     parser.add_argument("--keep-recent", type=int, default=2, help="压缩时保留最近 N 条")
@@ -39,7 +39,12 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset = json.loads(Path(args.dataset).read_text(encoding="utf-8"))
-    summarize_fn = SUMMARIZERS[args.summarizer](max_chars=args.max_chars)
+    if args.summarizer == "llm":
+        # 懒加载：离线基线模式不引入真实 client
+        from app.agent.memory.eval.llm_summarizer import build_llm_summarizer
+        summarize_fn = build_llm_summarizer()
+    else:
+        summarize_fn = SUMMARIZERS[args.summarizer](max_chars=args.max_chars)
     results = evaluate(dataset, summarize_fn, args.threshold, args.keep_recent)
     agg = aggregate(results)
 

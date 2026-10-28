@@ -19,7 +19,11 @@ from app.agent.summarizer import split_history
 
 @dataclass
 class RoundRecord:
-    """一次压缩事件的快照与当时的事实保留状态。"""
+    """一次压缩事件的快照与当时的事实保留状态。
+
+    summary / input_messages 为该轮摘要全文与送入摘要器的原始老消息，
+    随结果 JSON 落盘，保证评测全程可回溯复现。
+    """
 
     round: int
     n_compressed: int
@@ -27,6 +31,8 @@ class RoundRecord:
     summary_chars: int
     window_chars: int
     facts: dict[str, FactState]
+    summary: str = ""
+    input_messages: list[dict] = field(default_factory=list)
 
     def retention(self) -> float:
         if not self.facts:
@@ -42,6 +48,8 @@ class RoundRecord:
             "window_chars": self.window_chars,
             "facts": {k: v.to_dict() for k, v in self.facts.items()},
             "retention": round(self.retention(), 4),
+            "summary": self.summary,
+            "input_messages": self.input_messages,
         }
 
 
@@ -98,7 +106,9 @@ class ScriptResult:
             "n_rounds": self.n_rounds,
             "original_chars": self.original_chars,
             "final_summary_chars": len(self.final_summary or ""),
+            "final_summary": self.final_summary,
             "final_window_chars": sum(len(message_text(m)) for m in self.final_window),
+            "final_window": self.final_window,
             "compression_ratio": round(self.compression_ratio, 4),
             "retention": round(self.retention, 4),
             "summary_reliant_retention": round(self.summary_reliant_retention, 4),
@@ -152,6 +162,8 @@ def run_script(
             summary_chars=len(summary),
             window_chars=sum(len(message_text(m)) for m in messages),
             facts=check_facts(facts, summary, messages),
+            summary=summary,
+            input_messages=list(old),
         ))
 
     final_facts = check_facts(facts, summary, messages)
