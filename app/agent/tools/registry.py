@@ -144,8 +144,9 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "recall_user_memory",
             "description": (
-                "查询当前用户的记忆信息，包括本次对话提取的短期记忆和跨会话的长期记忆。"
-                "当需要回顾用户的偏好、历史问题、会员信息等时使用。"
+                "查询当前用户的私有记忆：本次对话提取的短期记忆和跨会话的长期记忆"
+                "（身份、偏好、历史交互等）。仅用于回答关于用户本人的问题；"
+                "会员权益、平台政策等公开知识请用 search_knowledge。"
             ),
             "parameters": {
                 "type": "object",
