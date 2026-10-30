@@ -83,13 +83,13 @@ def main():
                 print("\n--- 短期记忆（本次对话）---")
                 if stm.facts:
                     for f in stm.facts:
-                        print(f"  - {f}")
+                        print(f"  - [{f.fact_type}/{f.category}] {f.content}")
                 else:
                     print("  （暂无）")
                 print(f"\n--- 长期记忆（跨会话，用户: {ltm.user_id}）---")
                 if ltm.facts:
                     for f in ltm.facts:
-                        print(f"  - [{f.category}] {f.content}")
+                        print(f"  - [{f.fact_type}/{f.category}] {f.content}")
                 else:
                     print("  （暂无）")
                 if ltm.interaction_summaries:

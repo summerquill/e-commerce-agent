@@ -85,12 +85,12 @@ def test_stm_extraction():
     if len(stm_facts) > 0:
         _ok(f"STM 提取到 {len(stm_facts)} 条事实")
         for f in stm_facts:
-            print(f"     - {f}")
+            print(f"     - [{f.fact_type}/{f.category}] {f.content}")
     else:
         _fail("STM 未提取到任何事实")
 
     keywords = ["张三", "钻石", "红色", "运动鞋"]
-    facts_text = " ".join(stm_facts).lower()
+    facts_text = " ".join(f.content for f in stm_facts).lower()
     found = sum(1 for kw in keywords if kw in facts_text)
     if found >= 2:
         _ok(f"事实中包含 {found}/{len(keywords)} 个预期关键词")
@@ -186,7 +186,7 @@ def test_ltm_extraction():
     if len(data["facts"]) > 0:
         _ok(f"LTM 提取到 {len(data['facts'])} 条事实")
         for f in data["facts"][:3]:
-            print(f"     - [{f['category']}] {f['content']}")
+            print(f"     - [{f.get('fact_type', 'historical')}/{f['category']}] {f['content']}")
     else:
         print("  ⚠️  LTM 未提取到事实（可能因对话内容不够丰富）")
 
@@ -252,8 +252,8 @@ def test_memory_tool():
     else:
         print("  ⚠️  工具未返回长期记忆")
 
-    print(f"     短期: {stm[:3]}")
-    print(f"     长期: {ltm[:3]}")
+    print(f"     短期: {[f['content'] for f in stm[:3]]}")
+    print(f"     长期: {[f['content'] for f in ltm[:3]]}")
 
 
 def main():

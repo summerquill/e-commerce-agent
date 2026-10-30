@@ -23,10 +23,11 @@ def recall_user_memory(query: str = "") -> dict:
 
     result: dict = {
         "success": True,
-        "short_term_facts": _memory_manager.stm.facts,
+        "short_term_facts": [
+            f.to_dict() for f in _memory_manager.stm.facts
+        ],
         "long_term_facts": [
-            {"content": f.content, "category": f.category}
-            for f in _memory_manager.ltm.facts
+            f.to_dict() for f in _memory_manager.ltm.facts
         ],
     }
 

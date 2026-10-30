@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -16,15 +16,9 @@ from typing import Optional
 from openai import OpenAI
 
 from app.agent.memory.extraction import extract_long_term_facts
+from app.agent.memory.fact import MemoryFact, render_facts
 
-
-@dataclass
-class MemoryFact:
-    """一条长期记忆事实。"""
-    content: str
-    category: str  # identity / preference / behavior / issue / other
-    created_at: str
-    source_session: str = ""
+__all__ = ["MemoryFact", "LongTermMemory"]
 
 
 class LongTermMemory:
@@ -57,12 +51,7 @@ class LongTermMemory:
             return
 
         for item in data.get("facts", []):
-            self.facts.append(MemoryFact(
-                content=item["content"],
-                category=item.get("category", "other"),
-                created_at=item.get("created_at", ""),
-                source_session=item.get("source_session", ""),
-            ))
+            self.facts.append(MemoryFact.from_dict(item))
         self.interaction_summaries = data.get("interaction_summaries", [])
 
     def save(self) -> None:
@@ -128,10 +117,13 @@ class LongTermMemory:
 
         parts = []
         if self.facts:
-            facts_text = "\n".join(
-                f"- [{f.category}] {f.content}" for f in self.facts
+            facts_text = render_facts(
+                self.facts, with_category=True, with_time=True,
             )
-            parts.append(f"该用户的历史记忆（来自过往会话）：\n{facts_text}")
+            parts.append(
+                "该用户的历史记忆（来自过往会话，不能当作当前实时状态；"
+                f"与本次工具结果冲突时以本次为准）：\n{facts_text}"
+            )
 
         if self.interaction_summaries:
             recent = self.interaction_summaries[-3:]
