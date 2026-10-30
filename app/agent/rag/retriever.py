@@ -16,6 +16,52 @@ from app.agent.rag.embedder import Embedder
 
 __all__ = ["KnowledgeRetriever", "HybridRetriever", "RetrievedChunk"]
 
+# 文档级聚合检索参数：
+# - 触发：top-k 结果中与 top-1 同文档的 chunk 数 >= DOC_SCOPE_MIN_HITS，
+#   说明 query 打在整个文档主题上（如"咨询会员权益"），而非某个具体小节
+# - 上限：文档 chunk 数超过 DOC_SCOPE_MAX_CHUNKS 时不整篇展开，
+#   防止单次工具调用注入过大的上下文（会员权益恰好 10 个 chunk，可展开）
+DOC_SCOPE_MIN_HITS = 3
+DOC_SCOPE_MAX_CHUNKS = 10
+
+
+def expand_doc_scope(
+    hits: list[RetrievedChunk],
+    top_k: int,
+    doc_hits_fn,
+) -> list[RetrievedChunk]:
+    """宽泛问题的文档级聚合：top-k 被同一文档占据时，返回整篇文档。
+
+    展开规则：
+    1. 该文档全部 chunk（含 query 真实相似度）按分数降序排在最前，
+       同分按 chunk_id 排序保证确定性；
+    2. 原始 top-k 中不属于该文档的命中保留在后面（跨文档信号不丢弃）；
+    3. 按 chunk_id 去重，展开条目标记 expanded=True 供工具层观测。
+
+    未触发（命中过于分散 / 文档过大）时原样返回，行为与普通检索一致。
+    """
+    if not hits:
+        return hits
+    top1_doc = hits[0].chunk.doc
+    if not top1_doc:
+        return hits
+    same_doc_in_top = sum(
+        1 for h in hits[:top_k] if h.chunk.doc == top1_doc
+    )
+    if same_doc_in_top < DOC_SCOPE_MIN_HITS:
+        return hits
+
+    doc_hits = doc_hits_fn(top1_doc)
+    if not doc_hits or len(doc_hits) > DOC_SCOPE_MAX_CHUNKS:
+        return hits
+
+    doc_ids = {h.chunk.chunk_id for h in doc_hits}
+    extras = [h for h in hits if h.chunk.chunk_id not in doc_ids]
+    ranked = sorted(doc_hits, key=lambda h: (-h.score, h.chunk.chunk_id))
+    for h in ranked:
+        h.expanded = True
+    return ranked + extras
+
 
 class KnowledgeRetriever:
     """对上层暴露统一接口，对下委托给具体 backend。"""
@@ -51,6 +97,23 @@ class KnowledgeRetriever:
             self.load()
         q_vec = self._embedder.encode_one(query)
         return self._backend.search(q_vec, top_k=top_k)
+
+    def encode_query(self, query: str) -> list[float]:
+        """暴露 query 向量化给组合检索器（HybridRetriever）复用。"""
+        return self._embedder.encode_one(query)
+
+    def search_expanded(self, query: str, top_k: int = 3) -> list[RetrievedChunk]:
+        """带文档级聚合的检索：生产工具层使用，评测脚本仍走 search()。
+
+        注意 query 会编码两次（骨架 + 文档打分各一次），本地模型约十几 ms，
+        换取 search() 零改动以保持评测口径稳定。
+        """
+        hits = self.search(query, top_k=top_k)
+        return expand_doc_scope(
+            hits,
+            top_k,
+            lambda doc: self._backend.search_doc(doc, self.encode_query(query)),
+        )
 
 
 class HybridRetriever:
@@ -126,6 +189,19 @@ class HybridRetriever:
         if self._reranker is not None:
             skeleton = self._rerank(query, skeleton)
         return skeleton
+
+    def search_expanded(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
+        """带文档级聚合的检索：融合结果触发条件后整篇展开文档。
+
+        文档打分复用 dense 后端的 search_doc（真实余弦分）；
+        展开判断基于融合后的最终名次，补位/精排不改变触发语义。
+        """
+        hits = self.search(query, top_k=top_k)
+        q_vec = self._dense.encode_query(query)
+        return expand_doc_scope(
+            hits, top_k,
+            lambda doc: self._dense.backend.search_doc(doc, q_vec),
+        )
 
     def _rerank(self, query: str, items: list[RetrievedChunk]) -> list[RetrievedChunk]:
         """CrossEncoder 精排：按 rerank 分数降序重排，不改候选集。

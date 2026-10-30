@@ -101,7 +101,25 @@ class ChromaBackend(VectorBackend):
             query_embeddings=[query_vector],
             n_results=top_k,
         )
+        return self._parse_query_result(result)
 
+    def search_doc(self, doc: str, query_vector: list[float]) -> list[RetrievedChunk]:
+        """按 doc 元数据过滤后，对该文档全部 chunk 真实打分。
+
+        n_results 用全库 count 兜底（chroma 返回 min(n, 命中数)），
+        避免为拿文档 chunk 数多一次 get 查询。
+        """
+        if self._collection is None:
+            self.load()
+
+        result = self._collection.query(
+            query_embeddings=[query_vector],
+            n_results=max(self._collection.count(), 1),
+            where={"doc": doc},
+        )
+        return self._parse_query_result(result)
+
+    def _parse_query_result(self, result: dict) -> list[RetrievedChunk]:
         ids = result.get("ids", [[]])[0]
         documents = result.get("documents", [[]])[0]
         metadatas = result.get("metadatas", [[]])[0]

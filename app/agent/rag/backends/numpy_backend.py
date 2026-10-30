@@ -68,6 +68,22 @@ class NumpyBackend(VectorBackend):
             for idx, score in scored[:top_k]
         ]
 
+    def search_doc(self, doc: str, query_vector: list[float]) -> list[RetrievedChunk]:
+        """该文档全部 chunk 对 query 向量的真实余弦分（降序，同分按 chunk_id）。"""
+        if not self._chunks:
+            self.load()
+
+        scored = [
+            (idx, _cosine(query_vector, vec))
+            for idx, vec in enumerate(self._vectors)
+            if self._chunks[idx].doc == doc
+        ]
+        scored.sort(key=lambda x: (-x[1], self._chunks[x[0]].chunk_id))
+        return [
+            RetrievedChunk(chunk=self._chunks[idx], score=score)
+            for idx, score in scored
+        ]
+
     def size(self) -> int:
         if not self._chunks and self._index_path.exists():
             self.load()

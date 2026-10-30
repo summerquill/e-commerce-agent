@@ -23,6 +23,9 @@ from app.agent.rag.chunker import Chunk
 class RetrievedChunk:
     chunk: Chunk
     score: float
+    # 文档级聚合检索标记：True 表示该条是「整篇文档展开」补入的，
+    # 而非本次 query 的原始 top-k 命中（用于工具层可观测性）
+    expanded: bool = False
 
 
 class VectorBackend(ABC):
@@ -55,3 +58,11 @@ class VectorBackend(ABC):
     @abstractmethod
     def expected_embedding_model(self) -> str:
         """已持久化索引使用的 embedding 模型名（用于校验）。"""
+
+    def search_doc(self, doc: str, query_vector: list[float]) -> list[RetrievedChunk]:
+        """按 doc 过滤后，对 query 向量全量打分（文档级聚合检索用）。
+
+        返回该文档全部 chunk 的真实 query 相似度（降序由调用方处理）。
+        默认不支持，具体后端按需实现——保证旧的自定义后端不受影响。
+        """
+        raise NotImplementedError(f"{type(self).__name__} 不支持按文档检索")

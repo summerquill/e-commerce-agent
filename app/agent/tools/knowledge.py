@@ -101,6 +101,7 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
           "success": bool,
           "backend": "numpy" | "chroma",
           "query": str,
+          "doc_scope": bool,  # 是否触发文档级聚合（宽泛问题整篇展开）
           "results": [
             {"doc": "...", "section": "...", "score": 0.83, "text": "..."},
             ...
@@ -131,12 +132,15 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
         }
 
     top_k = max(1, min(int(top_k or 3), 5))
-    hits = retriever.search(query, top_k=top_k)
+    # 文档级聚合：宽泛问题（top-k 被同一文档占据）整篇展开；评测脚本不走这里
+    search_fn = getattr(retriever, "search_expanded", None) or retriever.search
+    hits = search_fn(query, top_k=top_k)
 
     return {
         "success": True,
         "backend": settings.rag_backend,
         "query": query,
+        "doc_scope": any(getattr(h, "expanded", False) for h in hits),
         "results": [
             {
                 "doc": h.chunk.doc,
