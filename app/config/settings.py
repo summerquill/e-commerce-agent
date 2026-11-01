@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # ChromaBackend 的持久化目录与 collection 名
     chroma_persist_dir: str = "app/sessions/chroma"
     chroma_collection: str = "ecom_kb"
+    # RAG 检索日志：同时输出到终端和该文件（目录已被 .gitignore 忽略）
+    rag_log_path: str = "app/sessions/logs/rag.log"
 
     # Multi-Agent 配置（第6期）
     multi_agent_enabled: bool = False

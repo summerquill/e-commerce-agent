@@ -17,6 +17,9 @@ search_knowledge 面向非结构化文本（退换货政策、配送说明、FAQ
 
 from pathlib import Path
 from typing import Optional
+import logging
+import sys
+import time
 
 from app.config.settings import settings
 from app.agent.rag.backends import create_backend
@@ -24,6 +27,73 @@ from app.agent.rag.embedder import create_embedder
 from app.agent.rag.retriever import KnowledgeRetriever
 
 _retriever: Optional[KnowledgeRetriever] = None
+_rag_logger: Optional[logging.Logger] = None
+
+
+def _get_rag_logger() -> logging.Logger:
+    """构建 RAG 检索日志器：同时写终端和 settings.rag_log_path。"""
+    global _rag_logger
+    if _rag_logger is not None:
+        return _rag_logger
+
+    logger = logging.getLogger("ecom.rag")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.handlers.clear()
+
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S",
+    )
+    stream = logging.StreamHandler(sys.stdout)
+    stream.setFormatter(formatter)
+    logger.addHandler(stream)
+
+    log_path = Path(settings.rag_log_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    _rag_logger = logger
+    return logger
+
+
+def _reset_rag_logger() -> None:
+    """关闭并清空日志器（测试或切换日志路径时使用）。"""
+    global _rag_logger
+    if _rag_logger is not None:
+        for handler in _rag_logger.handlers:
+            handler.close()
+        _rag_logger.handlers.clear()
+    _rag_logger = None
+
+
+def _format_search_log(
+    query: str,
+    top_k: int,
+    doc_scope: bool,
+    hits: list,
+    elapsed_ms: float,
+) -> str:
+    """把一次检索格式化为可读日志（含每条 chunk 的命中证据）。"""
+    lines = [
+        (
+            f"[search_knowledge] query={query!r} backend={settings.rag_backend} "
+            f"mode={settings.retrieval_mode} top_k={top_k} "
+            f"doc_scope={doc_scope} hits={len(hits)} "
+            f"elapsed={elapsed_ms:.1f}ms"
+        )
+    ]
+    for rank, hit in enumerate(hits, start=1):
+        text = " ".join(hit.chunk.text.split())
+        preview = text[:80] + ("..." if len(text) > 80 else "")
+        lines.append(
+            f"  {rank}. score={hit.score:.4f} {hit.chunk.chunk_id} | "
+            f"{hit.chunk.doc} · {hit.chunk.section} | "
+            f"expanded={getattr(hit, 'expanded', False)}"
+        )
+        lines.append(f"     text: {preview}")
+    return "\n".join(lines)
 
 
 def _create_backend_from_settings():
@@ -110,11 +180,14 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
         }
     """
     if not query or not query.strip():
+        _get_rag_logger().warning("[search_knowledge] query 不能为空")
         return {"success": False, "error": "query 不能为空", "query": query, "results": []}
 
+    start = time.perf_counter()
     try:
         retriever = _get_retriever()
     except FileNotFoundError as e:
+        _get_rag_logger().error("[search_knowledge] 索引不存在: %s", e)
         return {
             "success": False,
             "error": str(e),
@@ -123,6 +196,7 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
             "results": [],
         }
     except Exception as e:
+        _get_rag_logger().error("[search_knowledge] 知识库初始化失败: %s", e)
         return {
             "success": False,
             "error": f"知识库初始化失败: {e}",
@@ -135,12 +209,17 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
     # 文档级聚合：宽泛问题（top-k 被同一文档占据）整篇展开；评测脚本不走这里
     search_fn = getattr(retriever, "search_expanded", None) or retriever.search
     hits = search_fn(query, top_k=top_k)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    doc_scope = any(getattr(h, "expanded", False) for h in hits)
+    _get_rag_logger().info(
+        _format_search_log(query, top_k, doc_scope, hits, elapsed_ms)
+    )
 
     return {
         "success": True,
         "backend": settings.rag_backend,
         "query": query,
-        "doc_scope": any(getattr(h, "expanded", False) for h in hits),
+        "doc_scope": doc_scope,
         "results": [
             {
                 "doc": h.chunk.doc,
