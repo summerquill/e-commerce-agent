@@ -17,55 +17,15 @@ search_knowledge 面向非结构化文本（退换货政策、配送说明、FAQ
 
 from pathlib import Path
 from typing import Optional
-import logging
-import sys
 import time
 
 from app.config.settings import settings
 from app.agent.rag.backends import create_backend
 from app.agent.rag.embedder import create_embedder
+from app.agent.rag.logging_utils import get_rag_logger as _get_rag_logger
 from app.agent.rag.retriever import KnowledgeRetriever
 
 _retriever: Optional[KnowledgeRetriever] = None
-_rag_logger: Optional[logging.Logger] = None
-
-
-def _get_rag_logger() -> logging.Logger:
-    """构建 RAG 检索日志器：同时写终端和 settings.rag_log_path。"""
-    global _rag_logger
-    if _rag_logger is not None:
-        return _rag_logger
-
-    logger = logging.getLogger("ecom.rag")
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    logger.handlers.clear()
-
-    formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S",
-    )
-    stream = logging.StreamHandler(sys.stdout)
-    stream.setFormatter(formatter)
-    logger.addHandler(stream)
-
-    log_path = Path(settings.rag_log_path)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    file_handler = logging.FileHandler(log_path, encoding="utf-8")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    _rag_logger = logger
-    return logger
-
-
-def _reset_rag_logger() -> None:
-    """关闭并清空日志器（测试或切换日志路径时使用）。"""
-    global _rag_logger
-    if _rag_logger is not None:
-        for handler in _rag_logger.handlers:
-            handler.close()
-        _rag_logger.handlers.clear()
-    _rag_logger = None
 
 
 def _format_search_log(
@@ -121,6 +81,7 @@ def _get_retriever():
     """
     global _retriever
     if _retriever is None:
+        start = time.perf_counter()
         embedder = create_embedder()
         backend = _create_backend_from_settings()
         dense = KnowledgeRetriever(embedder=embedder, backend=backend)
@@ -154,6 +115,19 @@ def _get_retriever():
                 "（可选: dense / hybrid / hybrid_rerank）"
             )
         _retriever.load()
+        index_ref = (
+            settings.kb_index_path
+            if settings.rag_backend.lower() == "numpy"
+            else settings.chroma_persist_dir
+        )
+        _get_rag_logger().info(
+            "[rag.init] backend=%s mode=%s model=%s index=%s elapsed=%.1fms",
+            settings.rag_backend,
+            settings.retrieval_mode,
+            embedder.model,
+            index_ref,
+            (time.perf_counter() - start) * 1000,
+        )
     return _retriever
 
 

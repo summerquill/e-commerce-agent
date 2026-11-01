@@ -11,10 +11,18 @@
 
 from __future__ import annotations
 
+import time
+
 from app.agent.rag.backends.base import RetrievedChunk, VectorBackend
 from app.agent.rag.embedder import Embedder
+from app.agent.rag.logging_utils import get_rag_logger
 
 __all__ = ["KnowledgeRetriever", "HybridRetriever", "RetrievedChunk"]
+
+
+def _brief_hits(hits: list[RetrievedChunk]) -> str:
+    """日志用的命中摘要：chunk_id:score，避免打印整段正文。"""
+    return ", ".join(f"{h.chunk.chunk_id}:{h.score:.4f}" for h in hits)
 
 # 文档级聚合检索参数：
 # - 触发：top-k 结果中与 top-1 同文档的 chunk 数 >= DOC_SCOPE_MIN_HITS，
@@ -29,6 +37,8 @@ def expand_doc_scope(
     hits: list[RetrievedChunk],
     top_k: int,
     doc_hits_fn,
+    *,
+    trace: bool = False,
 ) -> list[RetrievedChunk]:
     """宽泛问题的文档级聚合：top-k 被同一文档占据时，返回整篇文档。
 
@@ -39,20 +49,44 @@ def expand_doc_scope(
     3. 按 chunk_id 去重，展开条目标记 expanded=True 供工具层观测。
 
     未触发（命中过于分散 / 文档过大）时原样返回，行为与普通检索一致。
+    trace=True 时记录判定原因，供生产 tool 层排查；评测默认关闭。
     """
+    logger = get_rag_logger() if trace else None
     if not hits:
+        if logger:
+            logger.info("[rag.expand] skipped reason=no_hits")
         return hits
     top1_doc = hits[0].chunk.doc
     if not top1_doc:
+        if logger:
+            logger.info("[rag.expand] skipped reason=no_doc")
         return hits
     same_doc_in_top = sum(
         1 for h in hits[:top_k] if h.chunk.doc == top1_doc
     )
     if same_doc_in_top < DOC_SCOPE_MIN_HITS:
+        if logger:
+            logger.info(
+                "[rag.expand] skipped reason=too_scattered doc=%s "
+                "same_doc_in_top=%d threshold=%d",
+                top1_doc, same_doc_in_top, DOC_SCOPE_MIN_HITS,
+            )
         return hits
 
     doc_hits = doc_hits_fn(top1_doc)
-    if not doc_hits or len(doc_hits) > DOC_SCOPE_MAX_CHUNKS:
+    if not doc_hits:
+        if logger:
+            logger.info(
+                "[rag.expand] skipped reason=doc_empty doc=%s", top1_doc,
+            )
+        return hits
+    if len(doc_hits) > DOC_SCOPE_MAX_CHUNKS:
+        if logger:
+            logger.info(
+                "[rag.expand] skipped reason=doc_too_large doc=%s "
+                "doc_chunks=%d max=%d",
+                top1_doc, len(doc_hits), DOC_SCOPE_MAX_CHUNKS,
+            )
         return hits
 
     doc_ids = {h.chunk.chunk_id for h in doc_hits}
@@ -60,7 +94,15 @@ def expand_doc_scope(
     ranked = sorted(doc_hits, key=lambda h: (-h.score, h.chunk.chunk_id))
     for h in ranked:
         h.expanded = True
-    return ranked + extras
+    result = ranked + extras
+    if logger:
+        logger.info(
+            "[rag.expand] expanded doc=%s same_doc_in_top=%d doc_chunks=%d "
+            "hits_before=%d hits_after=%d hits=[%s]",
+            top1_doc, same_doc_in_top, len(doc_hits),
+            len(hits), len(result), _brief_hits(result),
+        )
+    return result
 
 
 class KnowledgeRetriever:
@@ -95,8 +137,19 @@ class KnowledgeRetriever:
     def search(self, query: str, top_k: int = 3) -> list[RetrievedChunk]:
         if not self._loaded:
             self.load()
+        start = time.perf_counter()
         q_vec = self._embedder.encode_one(query)
-        return self._backend.search(q_vec, top_k=top_k)
+        encode_ms = (time.perf_counter() - start) * 1000
+        search_start = time.perf_counter()
+        hits = self._backend.search(q_vec, top_k=top_k)
+        search_ms = (time.perf_counter() - search_start) * 1000
+        get_rag_logger().info(
+            "[rag.dense] backend=%s query=%r top_k=%d "
+            "encode=%.1fms search=%.1fms hits=[%s]",
+            type(self._backend).__name__, query, top_k,
+            encode_ms, search_ms, _brief_hits(hits),
+        )
+        return hits
 
     def encode_query(self, query: str) -> list[float]:
         """暴露 query 向量化给组合检索器（HybridRetriever）复用。"""
@@ -113,6 +166,7 @@ class KnowledgeRetriever:
             hits,
             top_k,
             lambda doc: self._backend.search_doc(doc, self.encode_query(query)),
+            trace=True,
         )
 
 
@@ -172,22 +226,39 @@ class HybridRetriever:
     def search(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
         if top_k <= 0:
             return []
+        dense_start = time.perf_counter()
         dense_hits = self._dense.search(query, top_k=self._fetch_depth)
+        dense_ms = (time.perf_counter() - dense_start) * 1000
+        bm25_start = time.perf_counter()
         lexical_hits = self._lexical.search(query, top_k=self._fetch_depth)
+        bm25_ms = (time.perf_counter() - bm25_start) * 1000
 
         skeleton = dense_hits[:top_k]
         tail = dense_hits[top_k:]
 
-        bm25_top_ids = {
-            hit.chunk.chunk_id for hit in lexical_hits[: self._sparse_top]
-        }
+        bm25_top = lexical_hits[: self._sparse_top]
+        bm25_top_ids = {hit.chunk.chunk_id for hit in bm25_top}
         substitute = next(
             (hit for hit in tail if hit.chunk.chunk_id in bm25_top_ids), None
         )
         if substitute is not None:
             skeleton = skeleton[:-1] + [substitute]
+
+        get_rag_logger().info(
+            "[rag.hybrid] query=%r fetch_depth=%d sparse_top=%d "
+            "dense_fetch=%d bm25_fetch=%d dense_ms=%.1f bm25_ms=%.1f "
+            "dense_skeleton=[%s] dense_tail=[%s] bm25_top=[%s] substitute=%s",
+            query, self._fetch_depth, self._sparse_top,
+            len(dense_hits), len(lexical_hits), dense_ms, bm25_ms,
+            _brief_hits(skeleton), _brief_hits(tail), _brief_hits(bm25_top),
+            substitute.chunk.chunk_id if substitute is not None else "none",
+        )
+
         if self._reranker is not None:
             skeleton = self._rerank(query, skeleton)
+        get_rag_logger().info(
+            "[rag.hybrid] final=[%s]", _brief_hits(skeleton),
+        )
         return skeleton
 
     def search_expanded(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
@@ -201,6 +272,7 @@ class HybridRetriever:
         return expand_doc_scope(
             hits, top_k,
             lambda doc: self._dense.backend.search_doc(doc, q_vec),
+            trace=True,
         )
 
     def _rerank(self, query: str, items: list[RetrievedChunk]) -> list[RetrievedChunk]:
@@ -209,9 +281,21 @@ class HybridRetriever:
         同分按 chunk_id 排序保证确定性（可复现评测）；
         score 字段仍保留 dense 余弦分，排序依据由 rerank 排名体现。
         """
+        start = time.perf_counter()
         scores = self._reranker.score(query, [h.chunk.text for h in items])
+        elapsed_ms = (time.perf_counter() - start) * 1000
         ranked = sorted(
             zip(items, scores),
             key=lambda pair: (-pair[1], pair[0].chunk.chunk_id),
+        )
+        after = ", ".join(
+            f"{item.chunk.chunk_id}:rerank={score:.4f}/dense={item.score:.4f}"
+            for item, score in ranked
+        )
+        get_rag_logger().info(
+            "[rag.rerank] model=%s candidates=%d elapsed=%.1fms "
+            "before=[%s] after=[%s]",
+            getattr(self._reranker, "model", type(self._reranker).__name__),
+            len(items), elapsed_ms, _brief_hits(items), after,
         )
         return [item for item, _ in ranked]

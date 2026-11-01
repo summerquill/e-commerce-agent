@@ -14,7 +14,10 @@ MPS，Intel Mac 强制 CPU（torch 在 Intel Mac 会误报 mps available）。
 
 from __future__ import annotations
 
+import time
+
 from app.config.settings import settings
+from app.agent.rag.logging_utils import get_rag_logger
 
 
 class Reranker:
@@ -35,10 +38,17 @@ class Reranker:
         self._model_name = model_name or settings.local_reranker_model
         self._max_length = max_length
         self._batch_size = batch_size
+        start = time.perf_counter()
+        resolved_device = device or pick_torch_device()
         self._model = CrossEncoder(
             self._model_name,
             max_length=max_length,
-            device=device or pick_torch_device(),
+            device=resolved_device,
+        )
+        get_rag_logger().info(
+            "[rag.rerank.init] model=%s device=%s elapsed=%.1fms",
+            self._model_name, resolved_device,
+            (time.perf_counter() - start) * 1000,
         )
 
     @property
