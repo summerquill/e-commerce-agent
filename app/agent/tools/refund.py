@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.agent.tools.mock_data import ORDERS
 
 
@@ -10,7 +12,12 @@ def apply_refund(order_id: str, reason: str) -> dict:
     if order["status"] == "refund_processing":
         return {"success": False, "error": "该订单已有退款申请正在处理中，请耐心等待"}
 
-    if order["status"] == "pending":
+    order["status"] = "refund_processing"
+    order["refund_reason"] = reason
+    order["refund_requested_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if order.get("shipped_at") is None:
+        order["refund_status"] = "退款中"
         return {
             "success": True,
             "message": (
@@ -19,6 +26,7 @@ def apply_refund(order_id: str, reason: str) -> dict:
             ),
         }
 
+    order["refund_status"] = "审核中"
     return {
         "success": True,
         "message": (
