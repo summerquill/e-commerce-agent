@@ -253,7 +253,7 @@ class EcomAgent:
             return
         old_messages, recent = split_result
 
-        new_summary = summarize(
+        new_summary, _usage = summarize(
             client=self.client,
             model=self.model,
             old_messages=old_messages,

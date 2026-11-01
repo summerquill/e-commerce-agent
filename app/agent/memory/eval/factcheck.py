@@ -74,3 +74,58 @@ def check_facts(
             in_window=gold_norm in window_norm,
         )
     return states
+
+
+# 语义等价人工核验的槽位证据映射：gold 类别 → 结构化状态中优先查看的字段。
+# 匹配的是值所在 JSON 路径上的任意一段键名（如 identifiers 子树下的中文
+# 类型键「订单号」的值，靠路径中的 identifiers 段命中）。None 表示全部。
+_CATEGORY_FIELDS: dict[str, tuple[str, ...] | None] = {
+    "status": ("status", "next_action", "business", "change_note"),
+    "promise": ("promise", "current_sla", "previous_sla", "next_action"),
+    "current_promise": ("current_sla", "promise", "change_note"),
+    "historical_promise": ("previous_sla", "promise"),
+    "preference": ("preferences",),
+    "order_id": ("identifiers",),
+}
+
+
+def structured_evidence(
+    fact: Fact, state_json: str | None,
+) -> list[str]:
+    """从结构化状态 JSON 中抽取与该 gold 语义相关的槽位值，供人工核验语义等价。
+
+    背景（v2 实测）：字面子串匹配对措辞改写产生假阴性（摘要写「48小时内发新机」，
+    gold 是「48 小时内发出」——信息在场被判丢）。结构化摘要下字段值就是原文
+    表述，把类别相关槽位的值列为证据，争议样本由人工判定语义等价，不引入
+    LLM judge（确定性优先，judge 单条波动可达 ±0.6）。
+
+    state_json 无法解析时返回空列表（调用方按"无额外证据"处理）。
+    """
+    import json
+
+    if not state_json:
+        return []
+    try:
+        state = json.loads(state_json)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(state, dict):
+        return []
+
+    fields = _CATEGORY_FIELDS.get(fact.category)
+    values: list[str] = []
+
+    def _walk(node, path: tuple[str, ...] = ()) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                _walk(v, path + (str(k),))
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item, path)
+        else:
+            if fields is None or any(seg in fields for seg in path):
+                values.append(str(node))
+
+    _walk(state)
+    # 完整槽位证据供人工核验；仅过滤空值与 unknown 占位
+    return sorted({v for v in values if v and v != "unknown"})

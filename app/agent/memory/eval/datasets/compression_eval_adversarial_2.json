@@ -1,0 +1,331 @@
+{
+  "version": 2,
+  "description": "Pinned Facts 压力测试集 v2。目标：在不修改压缩算法的前提下，检验递归压缩中关键实体是否被保留，以及实体与业务关系是否错配。相较 v1，减少关键订单号在后续消息中的重复曝光；增加相似订单号/相近业务线干扰；让后段问题依赖早期上下文回指；增加当前状态与历史状态区分。建议先分别运行纯摘要与 --pin-entities，保持相同模型、参数和随机性设置。注意：本集是压力测试，不代表线上流量分布；需与原始 prod 集共同报告。",
+  "scripts": [
+    {
+      "id": "long_multorder_008_v2",
+      "description": "三条主要业务线：A=西屋破壁机换货，B=苏泊尔电饭煲质量投诉，C=苏泊尔电水壶退款。订单号集中在前段，之后不再显式复述；中后段以商品/业务描述回指。增加相似订单号干扰项 SO202511150120（仅作为另一笔普通订单出现，不应与 A 混淆），并引入 B 线 SLA 更新。末段要求按业务线恢复订单号及当前状态，测试实体保留与关系绑定。",
+      "messages": [
+        {
+          "role": "user",
+          "content": "你好，我有几件售后要一起处理。先说西屋破壁机，使用时有异响，我申请了换货，订单号 SO202511150102，帮我查下进度。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_901",
+              "type": "function",
+              "function": {
+                "name": "query_order",
+                "arguments": "{\"order_id\": \"SO202511150102\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_901",
+          "content": "{\"order_id\": \"SO202511150102\", \"product\": \"西屋破壁机 PB21\", \"amount\": 599.0, \"status\": \"换货中\", \"aftersale_id\": \"EX2025111502\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "查到这台西屋破壁机，实付 599 元，目前处于换货流程。旧机仓检通过后，承诺 48 小时内发出新机。"
+        },
+        {
+          "role": "user",
+          "content": "第二件是苏泊尔电饭煲，内胆涂层用了两周就起皮，订单号 SO202511150103。我要登记质量投诉。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_902",
+              "type": "function",
+              "function": {
+                "name": "register_complaint",
+                "arguments": "{\"order_id\": \"SO202511150103\", \"type\": \"质量问题\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_902",
+          "content": "{\"complaint_id\": \"CP2025111509\", \"callback_sla\": \"24 小时\", \"coupon\": \"VC2025111509\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "质量投诉已登记，工单编号 CP2025111509。专员承诺 24 小时内回电，并会发放一张编号为 VC2025111509 的 50 元无门槛补偿券。"
+        },
+        {
+          "role": "user",
+          "content": "还有一笔电水壶退款，我记得是订单 SO202511150102。你先帮我查一下。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_903",
+              "type": "function",
+              "function": {
+                "name": "query_refund",
+                "arguments": "{\"order_id\": \"SO202511150102\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_903",
+          "content": "{\"order_id\": \"SO202511150102\", \"refund\": null, \"note\": \"该订单无退款记录，仅有换货记录\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "核实后发现，刚才说的这笔订单没有退款记录，只有换货记录。你可以再确认一下退款对应的是哪件商品。"
+        },
+        {
+          "role": "user",
+          "content": "想起来了，退款是苏泊尔电水壶那单，订单号 SO202511150108，不是刚才那笔。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_904",
+              "type": "function",
+              "function": {
+                "name": "query_refund",
+                "arguments": "{\"order_id\": \"SO202511150108\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_904",
+          "content": "{\"order_id\": \"SO202511150108\", \"product\": \"苏泊尔电水壶 SW-15\", \"refund_amount\": 89.0, \"status\": \"已退款\", \"refund_at\": \"2025-11-14\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "确认了，电水壶退款 89 元，已于昨天原路退回，预计 3 个工作日内到账。"
+        },
+        {
+          "role": "user",
+          "content": "另外我还买过一笔配件，订单号 SO202511150120。这个只是普通购买，不是上面那几件售后，别混在一起。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_905",
+              "type": "function",
+              "function": {
+                "name": "query_order",
+                "arguments": "{\"order_id\": \"SO202511150120\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_905",
+          "content": "{\"order_id\": \"SO202511150120\", \"product\": \"破壁机杯盖配件\", \"amount\": 39.0, \"status\": \"已完成\", \"aftersale\": null}"
+        },
+        {
+          "role": "assistant",
+          "content": "查到这笔是 39 元的破壁机杯盖配件订单，交易已完成，没有关联售后。"
+        },
+        {
+          "role": "user",
+          "content": "我想确认一下，寄换货新机时可以指定顺丰吗？中通太慢了。"
+        },
+        {
+          "role": "assistant",
+          "content": "可以，我会把换货新机优先使用顺丰的偏好记下来。"
+        },
+        {
+          "role": "user",
+          "content": "这几件东西的电子发票都能在订单页下载吗？"
+        },
+        {
+          "role": "assistant",
+          "content": "已开票的订单可以直接下载；尚未开票的，需要等开票完成后再到订单详情页下载。"
+        },
+        {
+          "role": "user",
+          "content": "售后会不会影响我的黑卡会员等级？"
+        },
+        {
+          "role": "assistant",
+          "content": "正常申请售后不会影响会员等级，黑卡会员还享有售后专属客服通道。"
+        },
+        {
+          "role": "user",
+          "content": "黑卡积分怎么算？"
+        },
+        {
+          "role": "assistant",
+          "content": "通常每消费 1 元累计 1 积分；退款部分不计积分，换货订单按实付金额累计。"
+        },
+        {
+          "role": "user",
+          "content": "顺便问一下，会员日是哪天？"
+        },
+        {
+          "role": "assistant",
+          "content": "每月 8 号是会员日，积分兑换礼品会上新并有折扣。"
+        },
+        {
+          "role": "user",
+          "content": "我最近还在看空气炸锅，容量 5L 左右的有什么区别？"
+        },
+        {
+          "role": "assistant",
+          "content": "选购时可以比较容量、加热方式、清洁难度和售后政策；如果经常给多人做饭，5L 左右通常更宽裕。"
+        },
+        {
+          "role": "user",
+          "content": "如果之后要联系我，工作日上午比较方便，下午经常开会。"
+        },
+        {
+          "role": "assistant",
+          "content": "好的，联系时间偏好是工作日上午。"
+        },
+        {
+          "role": "user",
+          "content": "再确认一下，刚才投诉那边还没联系我。你帮我催一下，之前说的时限可以更新。"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_906",
+              "type": "function",
+              "function": {
+                "name": "urge_complaint",
+                "arguments": "{\"complaint_id\": \"CP2025111509\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_906",
+          "content": "{\"urged\": true, \"new_sla\": \"2 小时\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "已帮您加急，专员最新承诺是 2 小时内回电；这更新了之前的 24 小时承诺。"
+        },
+        {
+          "role": "user",
+          "content": "电水壶那笔钱还没到账的话，我是不是再等几个工作日就行？"
+        },
+        {
+          "role": "assistant",
+          "content": "是的，按刚才查询到的结果，退款已经发起，预计 3 个工作日内到账。"
+        },
+        {
+          "role": "user",
+          "content": "好的。今天就这些，后续有进展短信通知我就行。"
+        },
+        {
+          "role": "assistant",
+          "content": "好的，换货发出、退款到账以及售后进展有更新时，请留意短信通知。"
+        },
+        {
+          "role": "user",
+          "content": "最后帮我整理一下：破壁机换货、电饭煲投诉、电水壶退款、还有那笔普通配件订单，分别对应哪个订单号？并告诉我投诉最新的回电时限。"
+        },
+        {
+          "role": "assistant",
+          "content": ""
+        }
+      ],
+      "facts": [
+        {
+          "id": "order_a",
+          "category": "order_id",
+          "gold": "SO202511150102"
+        },
+        {
+          "id": "order_b",
+          "category": "order_id",
+          "gold": "SO202511150103"
+        },
+        {
+          "id": "order_c",
+          "category": "order_id",
+          "gold": "SO202511150108"
+        },
+        {
+          "id": "order_d_distractor",
+          "category": "order_id",
+          "gold": "SO202511150120"
+        },
+        {
+          "id": "a_exchange_status",
+          "category": "status",
+          "gold": "换货中"
+        },
+        {
+          "id": "a_exchange_promise",
+          "category": "promise",
+          "gold": "48 小时内发出"
+        },
+        {
+          "id": "b_complaint_id",
+          "category": "other",
+          "gold": "CP2025111509"
+        },
+        {
+          "id": "b_callback_initial",
+          "category": "historical_promise",
+          "gold": "24 小时内"
+        },
+        {
+          "id": "b_callback_current",
+          "category": "current_promise",
+          "gold": "2 小时内"
+        },
+        {
+          "id": "c_amount",
+          "category": "other",
+          "gold": "89 元"
+        },
+        {
+          "id": "c_eta",
+          "category": "promise",
+          "gold": "3 个工作日"
+        },
+        {
+          "id": "d_amount",
+          "category": "other",
+          "gold": "39 元"
+        },
+        {
+          "id": "preference_sf",
+          "category": "preference",
+          "gold": "顺丰"
+        },
+        {
+          "id": "late_member_day",
+          "category": "other",
+          "gold": "每月 8 号"
+        },
+        {
+          "id": "b_coupon",
+          "category": "other",
+          "gold": "VC2025111509"
+        }
+      ]
+    }
+  ]
+}

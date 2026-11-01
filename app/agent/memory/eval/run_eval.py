@@ -29,8 +29,10 @@ def main() -> None:
         help="评测集路径",
     )
     parser.add_argument(
-        "--summarizer", choices=sorted(SUMMARIZERS) + ["llm"], default="extractive",
-        help="摘要器：离线基线（truncate/extractive）或真实 LLM（llm，调 API）",
+        "--summarizer",
+        choices=sorted(SUMMARIZERS) + ["llm", "structured"], default="extractive",
+        help="摘要器：离线基线（truncate/extractive）、真实 LLM 自由文本（llm）、"
+             "或结构化状态摘要（structured，调 API，JSON 槽位 + 状态更新规则）",
     )
     parser.add_argument("--threshold", type=int, default=4, help="压缩触发阈值（消息条数）")
     parser.add_argument("--keep-recent", type=int, default=2, help="压缩时保留最近 N 条")
@@ -54,6 +56,9 @@ def main() -> None:
         summarize_fn = build_llm_summarizer(
             hard_cap=args.hard_cap or None, budget_chars=args.max_chars,
         )
+    elif args.summarizer == "structured":
+        from app.agent.memory.eval.llm_summarizer import build_structured_summarizer
+        summarize_fn = build_structured_summarizer(budget_chars=args.max_chars)
     else:
         summarize_fn = SUMMARIZERS[args.summarizer](max_chars=args.max_chars)
     results = evaluate(
@@ -93,6 +98,12 @@ def main() -> None:
         "aggregate": agg,
         "scripts": [r.to_dict() for r in results],
     }
+    # 结构化/LLM 摘要器附 token 账目（三口径分离）与解析成功率
+    if args.summarizer in ("llm", "structured"):
+        report["llm_meta"] = {
+            "usage_log": getattr(summarize_fn, "usage_log", []),
+            "parse_ok_per_round": getattr(summarize_fn, "parse_ok", []),
+        }
     out_path.write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8",
     )
