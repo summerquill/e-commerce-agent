@@ -11,6 +11,7 @@
     python tests/test_plan_execute_graph.py
 """
 
+import copy
 import json
 import sys
 import types
@@ -25,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from langgraph.types import Command  # noqa: E402
 
 from app.agent.tools.manager import ToolManager  # noqa: E402
+from app.agent.tools.mock_data import ORDERS  # noqa: E402
 from app.plan_execute.graph import PlanExecuteGraph  # noqa: E402
 from app.plan_execute.nodes.executor import HIGH_RISK_TOOLS  # noqa: E402
 
@@ -177,6 +179,14 @@ class PlanExecuteGraphFlowTest(unittest.TestCase):
     def setUp(self):
         # confirm 用例临时开启高风险工具，tearDown 兜底清空避免污染其他用例
         self.addCleanup(HIGH_RISK_TOOLS.clear)
+        # 退款会真实修改 ORDERS，每个用例前快照、结束后恢复，避免状态跨用例污染
+        snapshot = copy.deepcopy(ORDERS)
+
+        def restore_orders():
+            ORDERS.clear()
+            ORDERS.update(copy.deepcopy(snapshot))
+
+        self.addCleanup(restore_orders)
 
     def test_tool_success_path(self):
         """A: planner → executor 工具调用成功 → generate。"""
