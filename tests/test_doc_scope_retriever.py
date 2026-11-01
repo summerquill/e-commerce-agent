@@ -5,10 +5,13 @@
 - 后端复用真实 NumpyBackend（内存 + 临时文件），保证打分逻辑真实
 """
 
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
+from app.config.settings import settings
 from app.agent.rag.backends.base import RetrievedChunk
 from app.agent.rag.backends.numpy_backend import NumpyBackend
 from app.agent.rag.chunker import Chunk
@@ -271,6 +274,65 @@ class TestToolWiring(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertFalse(result["doc_scope"])
         self.assertEqual(result["results"][0]["doc"], "退换货政策")
+
+
+class TestRagLogging(unittest.TestCase):
+    """验证 RAG 日志：终端 + 文件双通道、字段齐全、失败路径可观测。"""
+
+    def setUp(self):
+        self._original_retriever = knowledge._retriever
+        self._original_log_path = settings.rag_log_path
+        self.tmp = tempfile.TemporaryDirectory()
+        self.log_path = Path(self.tmp.name) / "logs" / "rag.log"
+        settings.rag_log_path = str(self.log_path)
+        knowledge._reset_rag_logger()
+
+    def tearDown(self):
+        knowledge._reset_rag_logger()
+        knowledge._retriever = self._original_retriever
+        settings.rag_log_path = self._original_log_path
+        self.tmp.cleanup()
+
+    def _stub_retriever(self, hits):
+        stub = type("StubRetriever", (), {})()
+        stub.search_expanded = lambda query, top_k: hits
+        knowledge._retriever = stub
+
+    def test_success_logs_every_chunk_to_file_and_stdout(self):
+        hit1 = _hit(_chunk("会员权益#02-01", "会员权益", "注册会员权益..."), 0.6962)
+        hit1.expanded = True
+        hit2 = _hit(_chunk("会员权益#02-04", "会员权益", "钻石会员权益..."), 0.6463)
+        hit2.expanded = True
+        self._stub_retriever([hit1, hit2])
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            result = knowledge.search_knowledge("我要咨询一下会员权益", top_k=3)
+
+        self.assertTrue(result["success"])
+        self.assertTrue(result["doc_scope"])
+
+        content = self.log_path.read_text(encoding="utf-8")
+        # 文件确实创建在配置的路径
+        self.assertTrue(self.log_path.exists())
+        # 头部元信息
+        self.assertIn("[search_knowledge]", content)
+        self.assertIn("doc_scope=True", content)
+        self.assertIn("hits=2", content)
+        # 每条 chunk 的命中证据
+        self.assertIn("会员权益#02-01", content)
+        self.assertIn("会员权益#02-04", content)
+        self.assertIn("score=0.6962", content)
+        self.assertIn("expanded=True", content)
+        # 终端也同步输出
+        self.assertIn("会员权益#02-01", buf.getvalue())
+
+    def test_empty_query_logs_warning_to_file(self):
+        result = knowledge.search_knowledge("   ", top_k=3)
+        self.assertFalse(result["success"])
+        content = self.log_path.read_text(encoding="utf-8")
+        self.assertIn("[WARNING]", content)
+        self.assertIn("query 不能为空", content)
 
 
 if __name__ == "__main__":
