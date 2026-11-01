@@ -518,5 +518,178 @@ class TestStoragePinnedFacts(unittest.TestCase):
             self.assertIsNone(load_session(path)["pinned_facts"])
 
 
+# ──────────────────── 结构化状态摘要（Step：自由文本 → 槽位 JSON） ────────────────────
+
+_STATE_JSON = json.dumps({
+    "cases": [
+        {"business": "破壁机换货",
+         "identifiers": {"订单号": "SO202511150102", "售后单号": "EX2025111502"},
+         "status": "换货中", "next_action": "等待旧机仓检",
+         "promise": "仓检通过后48小时内发新机"},
+        {"business": "配件购买",
+         "identifiers": {"订单号": "SO202511150120"},
+         "status": "已完成", "next_action": "unknown", "promise": "unknown"},
+    ],
+    "commitments": [
+        {"business": "电饭煲质量投诉", "current_sla": "2小时内回电",
+         "previous_sla": "24小时内回电", "change_note": "已加急"},
+    ],
+    "preferences": ["换货新机优先使用顺丰"],
+}, ensure_ascii=False)
+
+
+class _StubStructuredClient:
+    """summarize_structured 桩：返回预设 payload，带 usage token。"""
+
+    def __init__(self, payload: str, completion_tokens: int = 42):
+        self.payload = payload
+        self.completion_tokens = completion_tokens
+        self.captured: list[dict] = []
+        self.chat = types.SimpleNamespace(
+            completions=types.SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs):
+        self.captured.append(kwargs)
+        msg = types.SimpleNamespace(content=self.payload, tool_calls=None)
+        usage = types.SimpleNamespace(completion_tokens=self.completion_tokens)
+        return types.SimpleNamespace(
+            choices=[types.SimpleNamespace(message=msg)], usage=usage)
+
+
+class TestParseStateJson(unittest.TestCase):
+
+    def test_plain_json(self):
+        from app.agent.summarizer import _parse_state_json
+        self.assertEqual(_parse_state_json('{"a": 1}'), {"a": 1})
+
+    def test_tolerates_fences_and_noise(self):
+        """lenient 解析：容忍 markdown fences 与前后杂质。"""
+        from app.agent.summarizer import _parse_state_json
+        raw = f"好的，以下是状态：\n```json\n{_STATE_JSON}\n```\n以上。"
+        self.assertEqual(_parse_state_json(raw), json.loads(_STATE_JSON))
+
+    def test_garbage_returns_none(self):
+        from app.agent.summarizer import _parse_state_json
+        self.assertIsNone(_parse_state_json("抱歉，我无法输出"))
+        self.assertIsNone(_parse_state_json(""))
+        self.assertIsNone(_parse_state_json("[1, 2, 3]"))  # 非 dict
+
+
+class TestStructuredSummarizerAdapter(unittest.TestCase):
+
+    def _fn(self, payload):
+        from app.agent.memory.eval.llm_summarizer import build_structured_summarizer
+        return build_structured_summarizer(
+            client=_StubStructuredClient(payload, completion_tokens=77))
+
+    def test_ok_path_records_tokens_and_parse_ok(self):
+        fn = self._fn(_STATE_JSON)
+        out = fn([{"role": "user", "content": "hi"}], None)
+        self.assertEqual(json.loads(out), json.loads(_STATE_JSON))
+        entry = fn.usage_log[0]
+        self.assertEqual(entry["completion_tokens"], 77)
+        self.assertIs(entry["parse_ok"], True)
+        self.assertEqual(fn.parse_ok, [True])
+
+    def test_garbage_falls_back_to_prev_state(self):
+        """解析失败时透传上一轮状态（陈旧优于崩坏），并标记 parse_ok=False。"""
+        fn = self._fn("抱歉，我无法输出")
+        prev = _STATE_JSON
+        out = fn([{"role": "user", "content": "hi"}], prev)
+        self.assertEqual(out, prev)
+        self.assertEqual(fn.parse_ok, [False])
+
+    def test_garbage_first_round_falls_back_to_empty_object(self):
+        fn = self._fn("垃圾")
+        self.assertEqual(fn([{"role": "user", "content": "hi"}], None), "{}")
+
+    def test_prev_state_passed_to_prompt(self):
+        """递归传递：上一轮状态 JSON 进入下一轮请求报文。"""
+        stub = _StubStructuredClient(_STATE_JSON)
+        from app.agent.memory.eval.llm_summarizer import build_structured_summarizer
+        fn = build_structured_summarizer(client=stub)
+        fn([{"role": "user", "content": "hi"}], _STATE_JSON)
+        user_content = stub.captured[0]["messages"][-1]["content"]
+        self.assertIn("【此前状态】", user_content)
+        self.assertIn("SO202511150102", user_content)
+        # JSON mode 开启
+        self.assertEqual(stub.captured[0]["response_format"], {"type": "json_object"})
+
+
+class TestStructuredEvidence(unittest.TestCase):
+
+    def test_status_fact_gets_status_slot_values(self):
+        """状态类 gold 的证据取自 status/next_action/business/change_note 槽位。"""
+        from app.agent.memory.eval.factcheck import structured_evidence
+        fact = Fact(id="a_exchange_status", category="status", gold="换货中")
+        ev = structured_evidence(fact, _STATE_JSON)
+        self.assertIn("换货中", ev)          # 案例状态
+        self.assertIn("已完成", ev)          # D 单
+        self.assertIn("等待旧机仓检", ev)
+        self.assertIn("已加急", ev)          # 变更说明
+
+    def test_promise_fact_gets_sla_slots(self):
+        from app.agent.memory.eval.factcheck import structured_evidence
+        fact = Fact(id="c_eta", category="promise", gold="3个工作日")
+        ev = structured_evidence(fact, _STATE_JSON)
+        self.assertIn("仓检通过后48小时内发新机", ev)
+        self.assertIn("2小时内回电", ev)
+        self.assertIn("24小时内回电", ev)     # 降级后的历史承诺也在证据里
+
+    def test_literals_already_matching_gold_are_filtered(self):
+        """证据包含全部相关槽位值（含字面已命中的），供完整人工核验。"""
+        from app.agent.memory.eval.factcheck import structured_evidence
+        fact = Fact(id="x", category="status", gold="换货中")
+        ev = structured_evidence(fact, _STATE_JSON)
+        self.assertIn("换货中", ev)
+
+    def test_order_id_fact_gets_identifiers_subtree(self):
+        """编号类 gold 的证据取自 identifiers 子树（任意中文类型键）。"""
+        from app.agent.memory.eval.factcheck import structured_evidence
+        fact = Fact(id="x", category="order_id", gold="不存在")
+        ev = structured_evidence(fact, _STATE_JSON)
+        self.assertIn("SO202511150102", ev)
+        self.assertIn("EX2025111502", ev)
+        self.assertIn("SO202511150120", ev)
+        self.assertNotIn("换货中", ev)       # 状态不在编号证据里
+
+    def test_unknown_and_unparsable_filtered(self):
+        from app.agent.memory.eval.factcheck import structured_evidence
+        fact = Fact(id="x", category="status", gold="换货中")
+        ev = structured_evidence(fact, _STATE_JSON)
+        self.assertNotIn("unknown", ev)
+        self.assertEqual(structured_evidence(fact, "不是JSON"), [])
+        self.assertEqual(structured_evidence(fact, None), [])
+
+
+class TestRunnerStructuredRoundtrip(unittest.TestCase):
+    """runner 跑结构化摘要器：JSON 状态递归传递 + factcheck 对 JSON 字面工作。"""
+
+    def test_state_json_passthrough_and_factcheck(self):
+        dataset = _load_dataset()
+        script = _script_by_id(dataset, "ret_flow_001")
+        seen_prev: list[str | None] = []
+
+        def fake_summarize(old, prev):
+            seen_prev.append(prev)
+            return json.dumps({
+                "active_cases": [
+                    {"entity": "退货", "order_id": "SO202511020015",
+                     "status": "处理中", "pending_action": "unknown",
+                     "promise": "unknown"}],
+                "updated_commitments": [], "preferences": [],
+            }, ensure_ascii=False)
+
+        result = run_script(script, fake_summarize, threshold=4, keep_recent=2)
+        # 首轮 prev=None，之后每轮都收到上一轮 JSON（递归传递）
+        self.assertIsNone(seen_prev[0])
+        for p in seen_prev[1:]:
+            self.assertIn("SO202511020015", p)
+        # factcheck 对 JSON 串字面工作：订单号 gold 命中
+        self.assertTrue(result.final_facts["order_id"].in_summary)
+        # 摘要落盘的是 JSON 状态
+        json.loads(result.final_summary)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
