@@ -15,6 +15,7 @@ from app.config.settings import settings
 from app.agent.rag.backends.base import RetrievedChunk
 from app.agent.rag.backends.numpy_backend import NumpyBackend
 from app.agent.rag.chunker import Chunk
+from app.agent.rag.logging_utils import reset_rag_logger
 from app.agent.rag.retriever import (
     DOC_SCOPE_MAX_CHUNKS,
     KnowledgeRetriever,
@@ -285,10 +286,10 @@ class TestRagLogging(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.log_path = Path(self.tmp.name) / "logs" / "rag.log"
         settings.rag_log_path = str(self.log_path)
-        knowledge._reset_rag_logger()
+        reset_rag_logger()
 
     def tearDown(self):
-        knowledge._reset_rag_logger()
+        reset_rag_logger()
         knowledge._retriever = self._original_retriever
         settings.rag_log_path = self._original_log_path
         self.tmp.cleanup()
